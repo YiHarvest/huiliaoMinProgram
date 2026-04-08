@@ -1,0 +1,77 @@
+<scroll-view class="scrollarea" scroll-y type="list">
+  <view class="container">
+    <view class="header-section">
+      <view class="company-logo">榕慧</view>
+      <view class="company-name">{{companyInfo.name}}</view>
+      <view class="company-vision">{{companyInfo.vision}}</view>
+    </view>
+
+    <view class="section">
+      <view class="section-title">品牌介绍</view>
+      <view class="brand-content">
+        <view class="brand-mission">
+          <view class="brand-label">使命</view>
+          <view class="brand-text">{{companyInfo.mission}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-title">发展规划</view>
+      <view class="development-list">
+        <view class="development-item" wx:for="{{development}}" wx:key="title">
+          <view class="development-icon">🎯</view>
+          <view class="development-content">
+            <view class="development-title">{{item.title}}</view>
+            <view class="development-desc">{{item.desc}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-title">联系我们</view>
+      <view class="contact-list">
+        <view class="contact-item" bindtap="onCopyAddress">
+          <view class="contact-icon">📍</view>
+          <view class="contact-content">
+            <view class="contact-label">公司地址</view>
+            <view class="contact-value">{{companyInfo.address}}</view>
+          </view>
+          <view class="contact-action">复制</view>
+        </view>
+        <view class="contact-item" bindtap="onCallPhone">
+          <view class="contact-icon">📞</view>
+          <view class="contact-content">
+            <view class="contact-label">联系电话</view>
+            <view class="contact-value">{{companyInfo.phone}}</view>
+          </view>
+          <view class="contact-action">拨打</view>
+        </view>
+        <view class="contact-item" bindtap="onCopyEmail">
+          <view class="contact-icon">📧</view>
+          <view class="contact-content">
+            <view class="contact-label">电子邮箱</view>
+            <view class="contact-value">{{companyInfo.email}}</view>
+          </view>
+          <view class="contact-action">复制</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-title">关注我们</view>
+      <view class="qrcode-section">
+        <view class="qrcode-text">扫描下方二维码，关注公众号获取更多信息</view>
+        <view class="qrcode-image">
+          <image src="/参考/image.png" mode="aspectFit" style="width: 200rpx; height: 200rpx;"></image>
+        </view>
+      </view>
+    </view>
+
+    <view class="footer">
+      <view class="footer-text">© 2024 榕慧科技(杭州)有限公司</view>
+      <view class="footer-text">让AI成为医疗专家的得力助手</view>
+    </view>
+  </view>
+</scroll-view>

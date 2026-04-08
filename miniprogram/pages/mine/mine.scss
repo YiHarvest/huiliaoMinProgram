@@ -1,0 +1,207 @@
+$primary-color: #00A88F;
+$secondary-gray: #F5F5F5;
+$dark-gray: #333333;
+$light-cyan: #E6F7F5;
+$white: #FFFFFF;
+
+page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: $secondary-gray;
+}
+
+.scrollarea {
+  flex: 1;
+  overflow-y: hidden;
+}
+
+.container {
+  padding: 16px;
+  padding-bottom: 32px;
+}
+
+.header-section {
+  background: linear-gradient(135deg, $primary-color 0%, #008B75 100%);
+  border-radius: 12px;
+  padding: 32px 24px;
+  margin-bottom: 16px;
+  text-align: center;
+  color: $white;
+}
+
+.company-logo {
+  width: 64px;
+  height: 64px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: bold;
+  margin: 0 auto 12px;
+}
+
+.company-name {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.company-vision {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.section {
+  background: $white;
+  border-radius: 12px;
+  padding: 20px 16px;
+  margin-bottom: 16px;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: $dark-gray;
+  margin-bottom: 16px;
+}
+
+.brand-content {
+  background: $light-cyan;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.brand-mission {
+  margin-bottom: 12px;
+}
+
+.brand-label {
+  font-size: 12px;
+  color: $primary-color;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.brand-text {
+  font-size: 14px;
+  color: $dark-gray;
+  line-height: 1.6;
+}
+
+.development-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.development-item {
+  display: flex;
+  align-items: flex-start;
+  background: $secondary-gray;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.development-icon {
+  font-size: 24px;
+  margin-right: 12px;
+}
+
+.development-content {
+  flex: 1;
+}
+
+.development-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: $dark-gray;
+  margin-bottom: 4px;
+}
+
+.development-desc {
+  font-size: 14px;
+  color: #666;
+}
+
+.contact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  background: $secondary-gray;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.contact-icon {
+  font-size: 24px;
+  margin-right: 12px;
+}
+
+.contact-content {
+  flex: 1;
+}
+
+.contact-label {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 4px;
+}
+
+.contact-value {
+  font-size: 14px;
+  color: $dark-gray;
+}
+
+.contact-action {
+  font-size: 12px;
+  color: $primary-color;
+  padding: 4px 12px;
+  border: 1px solid $primary-color;
+  border-radius: 16px;
+}
+
+.footer {
+  text-align: center;
+  padding: 24px 16px;
+}
+
+.footer-text {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 4px;
+}
+
+.qrcode-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.qrcode-text {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.qrcode-image {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.qrcode-image image {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 8px;
+  background: #f9f9f9;
+}

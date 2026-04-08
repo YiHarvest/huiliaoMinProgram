@@ -1,0 +1,35 @@
+<view class="article-page" wx:if="{{article}}">
+  <scroll-view scroll-y class="article-scroll">
+    <view class="cover-card">
+      <image class="cover-image" src="{{article.coverImage}}" mode="aspectFill" />
+      <view class="cover-overlay"></view>
+      <view class="cover-content">
+        <text class="cover-kicker">榕慧模式</text>
+        <text class="cover-title">{{article.title}}</text>
+      </view>
+    </view>
+
+    <view class="article-shell">
+      <view class="lead-card">
+        <text class="lead-label">导语</text>
+        <text class="lead-text">{{article.lead}}</text>
+      </view>
+
+      <view class="content-card">
+        <view class="content-section" wx:for="{{article.sections}}" wx:key="title">
+          <text class="section-title">{{item.title}}</text>
+          <text class="section-paragraph" wx:for="{{item.paragraphs}}" wx:key="*this">{{item}}</text>
+        </view>
+      </view>
+
+      <view class="bottom-card">
+        <text class="bottom-title">继续了解榕慧</text>
+        <text class="bottom-desc">返回首页继续查看模式入口，或前往关于我们页了解公司与专家网络。</text>
+        <view class="bottom-actions">
+          <view class="bottom-btn bottom-btn-primary" bindtap="onBackHome">返回首页</view>
+          <view class="bottom-btn bottom-btn-secondary" bindtap="onAboutTap">关于我们</view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+</view>
