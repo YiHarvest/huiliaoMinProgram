@@ -1,0 +1,50 @@
+# 忽略端口测试信息
+端口测试信息/
+
+# 忽略小程序前端需求
+小程序前端需求/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 上传的文件
+uploads/
+huiliaoMiniPY/uploads/
+
+# 日志文件
+logs/
+*.log
+
+# IDE
+.idea/
+.vscode/
+
+# 临时文件
+*.tmp
+*.bak
+*.swp
+*~
+.DS_Store
+
+# 小程序配置（可选）
+huiliaoMiniProgram/project.config.json
+huiliaoMiniProgram/project.private.config.json

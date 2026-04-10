@@ -1,0 +1,88 @@
+﻿<view class="page">
+  <scroll-view class="page-scroll" scroll-y scroll-with-animation="true" scroll-into-view="{{scrollIntoView}}">
+    <view class="content">
+      <view class="identity-card">
+        <view class="identity-glow identity-glow-a"></view>
+        <view class="identity-glow identity-glow-b"></view>
+
+        <view class="identity-main">
+          <text class="identity-title">{{currentAssistant.introTitle}}</text>
+          <text class="identity-subtitle">{{currentAssistant.introSubtitle}}</text>
+          <text class="identity-desc">{{currentAssistant.introDescription}}</text>
+
+          <view class="identity-tag-row">
+            <text class="identity-tag" wx:for="{{profileTags}}" wx:key="*this">{{item}}</text>
+          </view>
+        </view>
+
+        <view class="identity-portrait">
+          <view class="identity-portrait-ring"></view>
+          <image class="identity-portrait-image" src="{{currentAssistant.avatar}}" mode="aspectFill"></image>
+        </view>
+      </view>
+
+      <view class="module">
+        <view class="module-head">
+          <text class="module-title">常用问题</text>
+          <text class="module-subtitle">点击问题可直接发起咨询</text>
+        </view>
+
+        <view class="question-grid">
+          <view
+            class="question-card"
+            wx:for="{{commonQuestions}}"
+            wx:key="id"
+            data-question="{{item.text}}"
+            bindtap="onTapCommonQuestion"
+          >
+            <text class="question-card-text">{{item.text}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="module message-module">
+        <view class="message-list">
+          <view
+            id="{{item.id}}"
+            class="message-row message-row-{{item.role}}"
+            wx:for="{{messages}}"
+            wx:key="id"
+          >
+            <view class="message-avatar" wx:if="{{item.role === 'assistant'}}">{{currentAssistant.avatarText}}</view>
+            <view class="message-body">
+              <text class="message-label">{{item.label}}</text>
+              <view class="message-bubble message-bubble-{{item.role}}">
+                <text class="message-text">{{item.content}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="input-spacer"></view>
+    </view>
+  </scroll-view>
+
+  <view class="input-bar">
+    <view class="input-shell">
+      <input
+        class="chat-input"
+        type="text"
+        maxlength="300"
+        placeholder="{{currentAssistant.placeholder}}"
+        value="{{inputValue}}"
+        disabled="{{isSending}}"
+        bindinput="onInputChange"
+        bindconfirm="onSendMessage"
+        confirm-type="send"
+      />
+      <button
+        class="send-btn {{(!canSend || isSending) ? 'send-btn-disabled' : ''}}"
+        disabled="{{!canSend || isSending}}"
+        bindtap="onSendMessage"
+      >
+        {{isSending ? '发送中' : '发送'}}
+      </button>
+    </view>
+  </view>
+</view>

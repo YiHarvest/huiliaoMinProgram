@@ -1,0 +1,127 @@
+<view class="page">
+  <scroll-view scroll-y class="page-scroll">
+    <view class="hero-shell">
+      <swiper
+        class="hero-swiper"
+        autoplay="{{true}}"
+        circular="{{true}}"
+        interval="4200"
+        duration="520"
+        current="{{currentBanner}}"
+        bindchange="onSwiperChange"
+      >
+        <swiper-item wx:for="{{bannerList}}" wx:key="id">
+          <view class="hero-slide">
+            <view class="hero-image-wrap">
+              <image class="hero-image" src="{{item.image}}" mode="aspectFill" />
+            </view>
+            <view class="hero-overlay"></view>
+
+            <view class="hero-content">
+              <view class="hero-info-area">
+                <text class="hero-pill-label">患者管理</text>
+                <text class="hero-main-title">全周期服务更高效</text>
+                <text class="hero-short-desc">从诊前到诊后，持续连接患者</text>
+                <view class="hero-function-tags">
+                  <text class="hero-function-tag">患者连接</text>
+                  <text class="hero-function-tag">持续服务</text>
+                </view>
+              </view>
+            </view>
+          </view>
+        </swiper-item>
+      </swiper>
+
+      <view class="hero-indicators">
+        <view
+          class="hero-indicator {{currentBanner === index ? 'hero-indicator-active' : ''}}"
+          wx:for="{{bannerList}}"
+          wx:key="id"
+        ></view>
+      </view>
+    </view>
+
+    <view class="section feature-section">
+      <view class="section-header">
+        <text class="section-title">核心功能</text>
+      </view>
+
+      <view class="feature-grid">
+        <view
+          class="feature-card"
+          wx:for="{{featureGrid}}"
+          wx:key="title"
+          data-route="{{item.route}}"
+          data-title="{{item.title}}"
+          bindtap="onOpenFeature"
+          hover-class="feature-card-hover"
+          hover-stay-time="80"
+        >
+          <view class="feature-icon-wrap">
+            <view class="feature-icon-halo"></view>
+            <view class="feature-icon-core">
+              <view wx:if="{{item.iconType === 'clipboard'}}" class="icon-clipboard">
+                <text class="icon-emoji">📋</text>
+              </view>
+
+              <view wx:elif="{{item.iconType === 'tongue'}}" class="icon-tongue">
+                <text class="icon-emoji">👅</text>
+              </view>
+
+              <view wx:elif="{{item.iconType === 'report'}}" class="icon-report">
+                <text class="icon-emoji">📄</text>
+              </view>
+
+              <view wx:elif="{{item.iconType === 'profile'}}" class="icon-profile">
+                <text class="icon-emoji">👤</text>
+              </view>
+            </view>
+          </view>
+
+          <text class="feature-title">{{item.title}}</text>
+          <text class="feature-desc">{{item.desc}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="section compact-section">
+      <view class="section-header">
+        <text class="section-title">榕慧模式</text>
+        <text class="section-subtitle">嵌入医院体系，沉淀患者关系，形成长期服务能力</text>
+      </view>
+
+      <view class="mode-overview-card">
+        <view class="mode-entry-list">
+          <view
+            class="mode-entry-card"
+            wx:for="{{modeEntries}}"
+            wx:key="id"
+            data-id="{{item.id}}"
+            bindtap="onOpenModeArticle"
+            hover-class="mode-entry-card-hover"
+            hover-stay-time="80"
+          >
+            <view class="mode-entry-head">
+              <text class="mode-entry-tag">{{item.tag}}</text>
+            </view>
+            <text class="mode-entry-title">{{item.title}}</text>
+            <text class="mode-entry-summary">{{item.summary}}</text>
+            <view class="mode-entry-foot">
+              <text class="mode-entry-link">查看详情</text>
+              <text class="mode-entry-arrow">→</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="cta-card">
+      <text class="cta-title">了解更多解决方案</text>
+      <text class="cta-desc">查看榕慧模式、专家网络与公司介绍</text>
+      <view class="cta-actions">
+        <view class="cta-btn cta-btn-primary" bindtap="onLearnMoreTap">了解方案</view>
+        <view class="cta-btn cta-btn-secondary" bindtap="onAboutTap">关于我们</view>
+      </view>
+    </view>
+  </scroll-view>
+</view>

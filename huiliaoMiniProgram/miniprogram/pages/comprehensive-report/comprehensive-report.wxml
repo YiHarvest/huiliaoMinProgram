@@ -1,0 +1,20 @@
+<view class="page">
+  <view class="page-body">
+    <view class="empty-state" wx:if="{{!hasReportData}}">
+      <view class="empty-icon" aria-role="img" aria-label="综合报告空状态">
+        <view class="empty-icon-board">
+          <view class="empty-icon-clip"></view>
+          <view class="empty-icon-paper">
+            <view class="empty-icon-line"></view>
+            <view class="empty-icon-line"></view>
+            <view class="empty-icon-line"></view>
+            <view class="empty-icon-line empty-icon-line-short"></view>
+          </view>
+        </view>
+      </view>
+      <text class="empty-text">暂无综合报告数据</text>
+    </view>
+
+    <view class="report-content" wx:else></view>
+  </view>
+</view>

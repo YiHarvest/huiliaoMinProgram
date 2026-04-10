@@ -1,0 +1,85 @@
+<view class="page">
+  <scroll-view class="page-scroll" scroll-y enable-flex="true">
+    <view class="content">
+      <view class="section-card">
+        <view class="card-head">
+          <view class="card-title-row">
+            <text class="card-title">医生信息</text>
+            <text class="field-tag field-tag-required">必填</text>
+          </view>
+        </view>
+
+        <view class="doctor-selector" bindtap="onChooseDoctor" hover-class="doctor-selector-hover" hover-stay-time="80">
+          <view class="doctor-content" wx:if="{{selectedDoctor}}">
+            <text class="doctor-name">{{selectedDoctor.name}}</text>
+            <text class="doctor-meta">{{selectedDoctor.department}}</text>
+            <view class="doctor-tag-row">
+              <text class="doctor-tag" wx:for="{{selectedDoctor.tags}}" wx:key="*this">{{item}}</text>
+            </view>
+          </view>
+          <view class="doctor-content doctor-content-placeholder" wx:else>
+            <text class="doctor-placeholder">确认医生信息</text>
+          </view>
+          <text class="doctor-arrow">></text>
+        </view>
+      </view>
+
+      <view class="section-card">
+        <view class="star-title-row">
+          <text class="star-mark">*</text>
+          <text class="card-title">性别</text>
+        </view>
+
+        <view class="gender-row">
+          <view
+            class="gender-option {{selectedGender === item.value ? 'gender-option-active' : ''}}"
+            wx:for="{{genderOptions}}"
+            wx:key="value"
+            data-value="{{item.value}}"
+            bindtap="onSelectGender"
+          >
+            <view class="gender-radio {{selectedGender === item.value ? 'gender-radio-active' : ''}}">
+              <view class="gender-radio-dot"></view>
+            </view>
+            <text class="gender-label">{{item.label}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="section-card">
+        <view class="star-title-row symptom-title-row">
+          <text class="star-mark">*</text>
+          <text class="card-title">疾病症状</text>
+        </view>
+
+        <view class="doctor-selector" bindtap="onChooseSymptom" hover-class="doctor-selector-hover" hover-stay-time="80">
+          <view class="doctor-content" wx:if="{{selectedSymptom}}">
+            <text class="selector-value">{{selectedSymptom}}</text>
+          </view>
+          <view class="doctor-content doctor-content-placeholder" wx:else>
+            <text class="doctor-placeholder">请选择疾病症状</text>
+          </view>
+          <text class="doctor-arrow">></text>
+        </view>
+      </view>
+
+      <view class="scale-section">
+        <text class="scale-section-title">请选择需要填写的量表</text>
+
+        <view class="scale-hint" wx:if="{{!canShowScales}}">
+          <text class="scale-hint-text">请选择需要填写的量表</text>
+        </view>
+
+        <view class="scale-list" wx:else>
+          <view class="scale-card" wx:for="{{visibleScales}}" wx:key="id">
+            <view class="scale-card-main">
+              <text class="scale-name">{{item.name}}</text>
+              <text class="scale-summary">{{item.summary}}</text>
+            </view>
+            <button class="scale-action" bindtap="onStartScale" data-name="{{item.name}}">开始填写</button>
+          </view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+</view>

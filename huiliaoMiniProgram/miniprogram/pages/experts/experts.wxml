@@ -1,0 +1,29 @@
+<scroll-view class="page-scroll" scroll-y enable-flex="true">
+  <view class="page">
+    <view class="page-header">
+      <text class="page-title">合作专家</text>
+      <text class="page-subtitle">精选合作专家与服务方向，支持从工作台继续查看与衔接服务。</text>
+    </view>
+
+    <view class="expert-list">
+      <view class="expert-card expert-card-{{item.theme}}" wx:for="{{experts}}" wx:key="id">
+        <view class="expert-card-head">
+          <view class="expert-avatar">
+            <text class="expert-avatar-text">{{item.name}}</text>
+          </view>
+          <view class="expert-main">
+            <text class="expert-name">{{item.name}}</text>
+            <text class="expert-title">{{item.title}} · {{item.department}}</text>
+          </view>
+        </view>
+
+        <view class="expert-tag-row">
+          <text class="expert-tag" wx:for="{{item.focus}}" wx:key="*this">{{item}}</text>
+        </view>
+
+        <text class="expert-summary">{{item.summary}}</text>
+        <view class="expert-action" data-name="{{item.name}}" bindtap="onConsultExpert">{{item.serviceLabel}}</view>
+      </view>
+    </view>
+  </view>
+</scroll-view>

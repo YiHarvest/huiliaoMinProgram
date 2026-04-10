@@ -1,0 +1,229 @@
+﻿<scroll-view class="page-scroll" scroll-y enable-flex="true">
+  <view class="page">
+    <view class="welcome-card">
+      <view class="welcome-glow welcome-glow-a"></view>
+      <view class="welcome-glow welcome-glow-b"></view>
+      <view class="welcome-grid"></view>
+
+      <text class="welcome-kicker">AI Workbench</text>
+      <text class="welcome-title">欢迎使用 AI 工作台</text>
+      <text class="welcome-subtitle">选择助手，开启问答、评估、舌诊与预约服务</text>
+
+      <view class="welcome-status-row">
+        <view class="welcome-status-card">
+          <text class="welcome-status-label">当前服务对象</text>
+          <text class="welcome-status-value">{{serviceTarget}}</text>
+        </view>
+        <view class="welcome-status-card">
+          <text class="welcome-status-label">当前推荐助手</text>
+          <text class="welcome-status-value">{{recommendedAssistantName}}</text>
+        </view>
+      </view>
+
+      <view class="welcome-current">
+        <text class="welcome-current-label">当前为你提供服务</text>
+        <text class="welcome-current-value">{{currentAssistant.name}}</text>
+      </view>
+    </view>
+
+    <view class="service-target-card" bindtap="onServiceTargetTap">
+      <view class="service-target-main">
+        <text class="service-target-label">当前服务对象</text>
+        <text class="service-target-value">{{serviceTarget}}</text>
+      </view>
+      <view class="service-target-side">
+        <text class="service-target-side-label">家庭版预留</text>
+        <text class="service-target-action">切换</text>
+      </view>
+    </view>
+
+    <view class="module assistant-module">
+      <view class="module-head">
+        <view>
+          <text class="module-title">AI 助手选择</text>
+          <text class="module-subtitle">先选谁为你提供当前服务</text>
+        </view>
+        <text class="module-link" bindtap="onMoreAssistants">更多助手</text>
+      </view>
+
+      <view class="assistant-grid">
+        <view
+          class="assistant-card {{currentAssistantId === item.id ? 'assistant-card-active' : ''}} assistant-card-{{item.accent}}"
+          wx:for="{{assistants}}"
+          wx:key="id"
+          data-id="{{item.id}}"
+          bindtap="onSelectAssistant"
+        >
+          <view class="assistant-portrait assistant-portrait-{{item.accent}}">
+            <view class="assistant-portrait-ring"></view>
+            <image class="assistant-portrait-image" src="{{item.avatar}}" mode="aspectFill"></image>
+          </view>
+
+          <view class="assistant-meta">
+            <text class="assistant-name">{{item.name}}</text>
+            <text class="assistant-role">{{item.role}}</text>
+            <text class="assistant-summary">{{item.summary}}</text>
+          </view>
+
+          <view class="assistant-tag-row">
+            <text class="assistant-tag" wx:for="{{item.tags}}" wx:key="*this">{{item}}</text>
+          </view>
+
+          <view class="assistant-foot">
+            <text class="assistant-status">{{currentAssistantId === item.id ? '已选中' : item.status}}</text>
+            <text class="assistant-check">{{currentAssistantId === item.id ? '当前助手' : '点击切换'}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="module intro-card">
+      <view class="module-head compact-head">
+        <text class="module-title">助手介绍</text>
+      </view>
+
+      <view class="intro-main">
+        <view class="intro-title-row">
+          <view>
+            <text class="intro-name">{{currentAssistant.name}}</text>
+            <text class="intro-role">{{currentAssistant.role}}</text>
+          </view>
+          <text class="intro-badge">{{currentAssistant.status}}</text>
+        </view>
+
+        <text class="intro-desc">{{currentAssistant.description}}</text>
+
+        <view class="intro-tag-row">
+          <text class="intro-tag" wx:for="{{currentAssistant.tags}}" wx:key="*this">{{item}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="module">
+      <view class="module-head">
+        <view>
+          <text class="module-title">快捷服务</text>
+          <text class="module-subtitle">高频服务入口集中在这里</text>
+        </view>
+      </view>
+
+      <view class="service-grid">
+        <view
+          class="service-card service-card-{{item.theme}}"
+          wx:for="{{serviceGrid}}"
+          wx:key="key"
+          data-title="{{item.title}}"
+          data-action="{{item.action}}"
+          bindtap="onTapService"
+        >
+          <view class="service-icon">
+            <text class="service-icon-text">{{item.iconText}}</text>
+          </view>
+          <text class="service-title">{{item.title}}</text>
+          <text class="service-desc">{{item.desc}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="module qa-card">
+      <view class="module-head">
+        <view>
+          <text class="module-title">智能问答</text>
+          <text class="module-subtitle">围绕当前助手快速发起问题，发送后进入对应助手的专属对话</text>
+        </view>
+      </view>
+
+      <view class="question-chip-row">
+        <text
+          class="question-chip"
+          wx:for="{{questionSuggestions}}"
+          wx:key="*this"
+          data-question="{{item}}"
+          bindtap="onSelectQuestion"
+        >
+          {{item}}
+        </text>
+      </view>
+
+      <view class="qa-input-shell">
+        <textarea
+          class="qa-input"
+          maxlength="200"
+          auto-height="true"
+          placeholder="请输入你想咨询的问题"
+          value="{{qaDraft}}"
+          bindinput="onQaInput"
+        ></textarea>
+        <view class="qa-send-btn" bindtap="onSendQa">发送</view>
+      </view>
+    </view>
+
+    <view class="module recent-module">
+      <view class="module-head">
+        <view>
+          <text class="module-title">最近服务</text>
+          <text class="module-subtitle">查看最近一次评估、舌诊、预约或随访状态</text>
+        </view>
+      </view>
+
+      <view class="recent-list">
+        <view
+          class="recent-item"
+          wx:for="{{recentServices}}"
+          wx:key="key"
+          data-title="{{item.title}}"
+          bindtap="onViewRecentService"
+        >
+          <view class="recent-main">
+            <text class="recent-title">{{item.title}}</text>
+            <text class="recent-time">{{item.time}}</text>
+          </view>
+          <view class="recent-side">
+            <text class="recent-status">{{item.status}}</text>
+            <text class="recent-action">{{item.actionText}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="module reminder-card">
+      <view class="module-head compact-head">
+        <text class="module-title">服务提醒</text>
+      </view>
+      <text class="reminder-desc">订阅评估结果、舌诊完成、随访问卷与就诊提醒，后续将接入微信通知能力。</text>
+      <view class="reminder-btn" bindtap="onSubscribeReminder">订阅提醒</view>
+    </view>
+
+    <view class="module expert-module">
+      <view class="module-head">
+        <view>
+          <text class="module-title">合作专家</text>
+          <text class="module-subtitle">了解更多专家与服务方向</text>
+        </view>
+        <text class="module-link" bindtap="onOpenExperts">更多</text>
+      </view>
+
+      <scroll-view class="expert-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+        <view class="expert-row">
+          <view
+            class="expert-card expert-card-{{item.theme}}"
+            wx:for="{{previewExperts}}"
+            wx:key="id"
+            bindtap="onOpenExperts"
+          >
+            <view class="expert-avatar">
+              <text class="expert-avatar-text">{{item.name}}</text>
+            </view>
+            <text class="expert-name">{{item.name}}</text>
+            <text class="expert-title">{{item.title}} · {{item.department}}</text>
+            <view class="expert-tag-row">
+              <text class="expert-tag" wx:for="{{item.focus}}" wx:key="*this">{{item}}</text>
+            </view>
+            <text class="expert-summary">{{item.summary}}</text>
+            <text class="expert-action">{{item.serviceLabel}}</text>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+</scroll-view>

@@ -1,0 +1,452 @@
+page {
+  background:
+    radial-gradient(circle at top right, rgba(0, 168, 143, 0.12), transparent 26%),
+    linear-gradient(180deg, #fbfefd 0%, #f3faf8 100%);
+}
+
+view,
+text,
+image,
+scroll-view {
+  box-sizing: border-box;
+}
+
+.page-scroll {
+  height: 100vh;
+}
+
+.page {
+  min-height: 100vh;
+  padding: 24rpx 28rpx calc(env(safe-area-inset-bottom) + 36rpx);
+}
+
+.hero-card,
+.section-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 28rpx;
+}
+
+.hero-card {
+  padding: 34rpx 32rpx 36rpx;
+  background:
+    linear-gradient(135deg, rgba(0, 168, 143, 0.96) 0%, rgba(39, 184, 212, 0.92) 100%),
+    linear-gradient(180deg, #10b79d 0%, #0aa7cb 100%);
+  box-shadow: 0 18rpx 36rpx rgba(10, 118, 116, 0.16);
+}
+
+.hero-glow {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.hero-glow-a {
+  top: -42rpx;
+  right: -32rpx;
+  width: 180rpx;
+  height: 180rpx;
+}
+
+.hero-glow-b {
+  right: 110rpx;
+  bottom: -68rpx;
+  width: 220rpx;
+  height: 220rpx;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.hero-header,
+.hero-title,
+.hero-desc,
+.hero-tag-list {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-header {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin-bottom: 24rpx;
+}
+
+.hero-logo {
+  flex-shrink: 0;
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 26rpx;
+  background: rgba(255, 255, 255, 0.16);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.28),
+    0 10rpx 24rpx rgba(7, 100, 99, 0.08);
+}
+
+.hero-logo-text {
+  font-size: 34rpx;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: 2rpx;
+  color: #ffffff;
+}
+
+.hero-company {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.hero-company-name {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
+}
+
+.hero-company-slogan {
+  font-size: 20rpx;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.hero-title {
+  display: block;
+  margin-top: 18rpx;
+  font-size: 48rpx;
+  line-height: 62rpx;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+}
+
+.hero-desc {
+  display: block;
+  max-width: 560rpx;
+  margin-top: 12rpx;
+  font-size: 25rpx;
+  line-height: 38rpx;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1rpx 4rpx rgba(0, 0, 0, 0.08);
+}
+
+.hero-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 24rpx;
+}
+
+.hero-tag {
+  padding: 0 18rpx;
+  height: 48rpx;
+  line-height: 48rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.92);
+  color: #109988;
+  font-size: 20rpx;
+  font-weight: 600;
+  box-shadow: 0 8rpx 18rpx rgba(10, 82, 82, 0.08);
+  transition: opacity 0.2s ease;
+}
+
+.hero-tag-hover {
+  opacity: 0.7;
+}
+
+.customer-service-wrap {
+  margin-top: 24rpx;
+}
+
+.customer-service-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  width: 100%;
+  height: 72rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, #00a88f 0%, #009983 100%);
+  border: none;
+  box-shadow: 0 8rpx 20rpx rgba(0, 168, 143, 0.2);
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.customer-service-btn::after {
+  border: none;
+}
+
+.customer-service-btn-hover {
+  background: linear-gradient(135deg, #00b899 0%, #00a88f 100%);
+  transform: scale(1.02);
+  box-shadow: 0 10rpx 24rpx rgba(0, 168, 143, 0.28);
+}
+
+.customer-service-icon {
+  font-size: 28rpx;
+  line-height: 1;
+}
+
+.customer-service-text {
+  font-size: 26rpx;
+  line-height: 1;
+}
+
+.section-card {
+  margin-top: 24rpx;
+  padding: 28rpx 24rpx;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 252, 251, 0.96) 100%);
+  border: 1rpx solid rgba(214, 238, 232, 0.9);
+  box-shadow: 0 10rpx 24rpx rgba(18, 71, 62, 0.05);
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.section-title {
+  display: block;
+  font-size: 34rpx;
+  line-height: 48rpx;
+  font-weight: 700;
+  color: #1f2d2a;
+}
+
+.section-note {
+  flex-shrink: 0;
+  height: 42rpx;
+  padding: 0 18rpx;
+  line-height: 42rpx;
+  border-radius: 999rpx;
+  background: #e7f8f4;
+  color: #5cae9f;
+  font-size: 20rpx;
+  font-weight: 600;
+}
+
+.contact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.contact-card {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  padding: 22rpx 20rpx;
+  border-radius: 24rpx;
+  background:
+    linear-gradient(180deg, #ffffff 0%, #fbfefd 100%);
+  border: 1rpx solid rgba(218, 239, 233, 0.85);
+  box-shadow: 0 8rpx 20rpx rgba(15, 94, 81, 0.04);
+  transition: all 0.2s ease;
+}
+
+.contact-card-hover {
+  background: #ffffff;
+  border-color: rgba(0, 168, 143, 0.3);
+  box-shadow: 0 10rpx 24rpx rgba(15, 94, 81, 0.08);
+  transform: translateY(-2rpx);
+}
+
+.contact-icon {
+  flex: 0 0 74rpx;
+  width: 74rpx;
+  height: 74rpx;
+  border-radius: 22rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.7);
+}
+
+.contact-icon-address {
+  background: linear-gradient(135deg, #ffd7ef 0%, #fff1f8 100%);
+}
+
+.contact-icon-phone {
+  background: linear-gradient(135deg, #ffd8dc 0%, #fff1f1 100%);
+}
+
+.contact-icon-email {
+  background: linear-gradient(135deg, #dfeeff 0%, #f3f7ff 100%);
+}
+
+.contact-icon-text {
+  font-size: 28rpx;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.contact-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.contact-label,
+.contact-value,
+.contact-hint,
+.office-title,
+.office-desc,
+.office-meta-label,
+.office-meta-value,
+.follow-desc,
+.follow-tip,
+.footer-company,
+.footer-copy {
+  display: block;
+}
+
+.contact-label {
+  font-size: 20rpx;
+  line-height: 30rpx;
+  color: #8b9b97;
+}
+
+.contact-value {
+  margin-top: 6rpx;
+  font-size: 28rpx;
+  line-height: 40rpx;
+  font-weight: 600;
+  color: #2d3c39;
+  word-break: break-all;
+}
+
+.contact-hint {
+  margin-top: 8rpx;
+  font-size: 20rpx;
+  line-height: 30rpx;
+  color: #7f8f8c;
+}
+
+.contact-action {
+  flex-shrink: 0;
+  min-width: 92rpx;
+  padding: 0 18rpx;
+  height: 52rpx;
+  line-height: 52rpx;
+  text-align: center;
+  border-radius: 999rpx;
+  border: 1rpx solid rgba(0, 168, 143, 0.55);
+  color: #0ca792;
+  background: rgba(232, 250, 246, 0.85);
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.office-card {
+  background:
+    linear-gradient(180deg, rgba(239, 250, 247, 0.96) 0%, rgba(255, 255, 255, 0.98) 100%);
+}
+
+.office-highlight {
+  padding: 22rpx 22rpx 20rpx;
+  border-radius: 22rpx;
+  background:
+    linear-gradient(135deg, rgba(0, 168, 143, 0.12) 0%, rgba(21, 188, 214, 0.08) 100%);
+  border: 1rpx solid rgba(184, 228, 220, 0.9);
+}
+
+.office-title {
+  font-size: 30rpx;
+  line-height: 42rpx;
+  font-weight: 700;
+  color: #1f302d;
+}
+
+.office-desc {
+  margin-top: 10rpx;
+  font-size: 23rpx;
+  line-height: 36rpx;
+  color: #58706a;
+}
+
+.office-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  margin-top: 18rpx;
+}
+
+.office-meta-item {
+  padding: 20rpx 22rpx;
+  border-radius: 20rpx;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1rpx solid rgba(219, 238, 232, 0.8);
+}
+
+.office-meta-label {
+  font-size: 20rpx;
+  line-height: 30rpx;
+  color: #8b9b97;
+}
+
+.office-meta-value {
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  line-height: 36rpx;
+  color: #314441;
+}
+
+.follow-card {
+  text-align: center;
+}
+
+.follow-desc {
+  font-size: 24rpx;
+  line-height: 36rpx;
+  color: #687d78;
+}
+
+.qrcode-shell {
+  width: 296rpx;
+  height: 296rpx;
+  margin: 24rpx auto 0;
+  padding: 24rpx;
+  border-radius: 28rpx;
+  background: #ffffff;
+  border: 1rpx solid rgba(221, 237, 232, 0.95);
+  box-shadow:
+    0 14rpx 32rpx rgba(15, 99, 86, 0.05),
+    inset 0 1rpx 0 rgba(255, 255, 255, 0.85);
+}
+
+.qrcode-image {
+  width: 100%;
+  height: 100%;
+}
+
+.follow-tip {
+  margin-top: 18rpx;
+  font-size: 20rpx;
+  line-height: 30rpx;
+  color: #90a19d;
+}
+
+.footer {
+  padding: 28rpx 24rpx 10rpx;
+  text-align: center;
+}
+
+.footer-company {
+  font-size: 22rpx;
+  line-height: 34rpx;
+  font-weight: 600;
+  color: #58706a;
+}
+
+.footer-copy {
+  margin-top: 8rpx;
+  font-size: 20rpx;
+  line-height: 30rpx;
+  color: #8ea09c;
+}

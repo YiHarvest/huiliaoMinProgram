@@ -1,0 +1,60 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/workbench/workbench",
+    "pages/chen-agent/chen-agent",
+    "pages/scale-form/scale-form",
+    "pages/tongue-upload/tongue-upload",
+    "pages/report-upload/report-upload",
+    "pages/comprehensive-report/comprehensive-report",
+    "pages/mode-article/mode-article",
+    "pages/experts/experts",
+    "pages/mine/mine"
+  ],
+  "window": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "榕慧",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "backgroundColor": "#F5F5F5"
+  },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#00A88F",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/home/home",
+        "text": "首页",
+        "iconPath": "assets/icons/home.png",
+        "selectedIconPath": "assets/icons/home-active.png"
+      },
+      {
+        "pagePath": "pages/workbench/workbench",
+        "text": "工作台",
+        "iconPath": "assets/icons/workbench.png",
+        "selectedIconPath": "assets/icons/workbench-active.png"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "联系我们",
+        "iconPath": "assets/icons/contact.png",
+        "selectedIconPath": "assets/icons/contact-active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "rendererOptions": {
+    "skyline": {
+      "defaultDisplayBlock": true,
+      "defaultContentBox": true,
+      "tagNameStyleIsolation": "legacy",
+      "disableABTest": true,
+      "sdkVersionBegin": "3.0.0",
+      "sdkVersionEnd": "15.255.255"
+    }
+  },
+  "componentFramework": "glass-easel",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}
