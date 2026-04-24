@@ -60,7 +60,15 @@
             <view class="message-body">
               <text class="message-label">{{item.label}}</text>
               <view class="message-bubble message-bubble-{{item.role}}">
-                <text class="message-text" user-select>{{item.content}}</text>
+                <text class="message-text" user-select wx:if="{{item.content !== '正在思考中...'}}">{{item.content}}</text>
+                <view class="loading-container" wx:else>
+                  <text class="loading-text">正在思考中</text>
+                  <view class="loading-dots">
+                    <text class="loading-dot">.</text>
+                    <text class="loading-dot">.</text>
+                    <text class="loading-dot">.</text>
+                  </view>
+                </view>
               </view>
             </view>
           </view>

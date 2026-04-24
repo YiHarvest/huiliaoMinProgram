@@ -183,14 +183,19 @@ Page({
     const assistant = assistantProfiles[assistantId]
     const timestamp = Date.now()
     const userMessage = createUserMessage(`msg-user-${timestamp}`, question)
-    const messages = [...this.data.messages, userMessage]
+    const placeholderMessage = createAssistantMessage(
+      `msg-assistant-placeholder-${timestamp}`,
+      '正在思考中...',
+      assistant.introTitle
+    )
+    const messages = [...this.data.messages, userMessage, placeholderMessage]
 
     this.setData({
       messages,
       inputValue: '',
       canSend: false,
       isSending: true,
-      scrollIntoView: userMessage.id
+      scrollIntoView: placeholderMessage.id
     })
 
     try {
@@ -199,27 +204,38 @@ Page({
         question,
         chatId: this.data.chatId || undefined
       })
-      const assistantMessage = createAssistantMessage(
-        `msg-assistant-${Date.now()}`,
-        response.content,
-        assistant.introTitle
+      
+      // 替换占位消息为真实回复
+      const updatedMessages = this.data.messages.map(msg => 
+        msg.id === placeholderMessage.id 
+          ? createAssistantMessage(
+              `msg-assistant-${Date.now()}`,
+              response.content,
+              assistant.introTitle
+            )
+          : msg
       )
 
       this.setData({
-        messages: [...this.data.messages, assistantMessage],
+        messages: updatedMessages,
         chatId: response.chatId || this.data.chatId,
-        scrollIntoView: assistantMessage.id
+        scrollIntoView: `msg-assistant-${Date.now()}`
       })
     } catch (error) {
-      const errorMessage = createAssistantMessage(
-        `msg-assistant-error-${Date.now()}`,
-        error instanceof Error ? error.message : '服务暂时不可用，请稍后重试。',
-        assistant.introTitle
+      // 替换占位消息为错误提示
+      const updatedMessages = this.data.messages.map(msg => 
+        msg.id === placeholderMessage.id 
+          ? createAssistantMessage(
+              `msg-assistant-error-${Date.now()}`,
+              '抱歉，当前服务较忙，请稍后重试',
+              assistant.introTitle
+            )
+          : msg
       )
 
       this.setData({
-        messages: [...this.data.messages, errorMessage],
-        scrollIntoView: errorMessage.id
+        messages: updatedMessages,
+        scrollIntoView: `msg-assistant-error-${Date.now()}`
       })
     } finally {
       this.setData({

@@ -109,11 +109,11 @@ Component({
             const responseData = res.data as any
             
             // 1. 原始接口响应
-            console.log('[scale-form:stage1] 原始接口响应 scales.length:', responseData?.scales?.length || 0)
-            console.log('[scale-form:stage1] 原始接口响应前3条:', responseData?.scales?.slice(0, 3) || [])
+            console.log('[scale-form:stage1] 原始接口响应 scales.length:', (responseData && responseData.scales && responseData.scales.length) || 0)
+            console.log('[scale-form:stage1] 原始接口响应前3条:', (responseData && responseData.scales && responseData.scales.slice(0, 3)) || [])
             
-            const categories = responseData?.categories || []
-            const scales = responseData?.scales || []
+            const categories = (responseData && responseData.categories) || []
+            const scales = (responseData && responseData.scales) || []
 
             // 2. 归一化后
             const normalizedScales = scales
@@ -123,9 +123,9 @@ Component({
             // 找到不育症诊断量表
             const testScale = scales.find((scale: any) => scale.questionnaireName.includes('不育症诊断量表'))
             console.log('[step 1] 原始 response.data - 不育症诊断量表:', {
-              questionnaireName: testScale?.questionnaireName,
-              templateId: testScale?.templateId,
-              id: testScale?.id,
+              questionnaireName: testScale && testScale.questionnaireName,
+              templateId: testScale && testScale.templateId,
+              id: testScale && testScale.id,
               scale: testScale
             })
 
@@ -135,9 +135,9 @@ Component({
 
             // 按 templateId 去重，只保留每个 templateId 的第一条
             console.log('[step 2] uniqueScales 生成前 - 不育症诊断量表:', {
-              questionnaireName: testScale?.questionnaireName,
-              templateId: testScale?.templateId,
-              id: testScale?.id,
+              questionnaireName: testScale && testScale.questionnaireName,
+              templateId: testScale && testScale.templateId,
+              id: testScale && testScale.id,
               scale: testScale
             })
 
@@ -181,9 +181,9 @@ Component({
             // 找到去重后的不育症诊断量表
             const testUniqueScale = uniqueScales.find((scale: any) => scale.questionnaireName.includes('不育症诊断量表'))
             console.log('[step 3] uniqueScales 生成后 - 不育症诊断量表:', {
-              questionnaireName: testUniqueScale?.questionnaireName,
-              templateId: testUniqueScale?.templateId,
-              id: testUniqueScale?.id,
+              questionnaireName: testUniqueScale && testUniqueScale.questionnaireName,
+              templateId: testUniqueScale && testUniqueScale.templateId,
+              id: testUniqueScale && testUniqueScale.id,
               scale: testUniqueScale
             })
 
@@ -212,9 +212,9 @@ Component({
             // 找到映射后的不育症诊断量表
             const testMappedScale = scaleList.find((scale: any) => scale.questionnaireName.includes('不育症诊断量表'))
             console.log('[step 4] scaleList 映射后 - 不育症诊断量表:', {
-              questionnaireName: testMappedScale?.questionnaireName,
-              templateId: testMappedScale?.templateId,
-              id: testMappedScale?.id,
+              questionnaireName: testMappedScale && testMappedScale.questionnaireName,
+              templateId: testMappedScale && testMappedScale.templateId,
+              id: testMappedScale && testMappedScale.id,
               scale: testMappedScale
             })
 
@@ -222,7 +222,7 @@ Component({
             console.log('[scale-form:debug] uniqueScales.length', uniqueScales.length)
             console.log('[scale-form:debug] first scale raw', uniqueScales[0])
             console.log('[scale-form:debug] first scale processed', scaleList[0])
-            console.log('[scale-form:debug] typeof first scale id', typeof scaleList[0]?.id)
+            console.log('[scale-form:debug] typeof first scale id', typeof (scaleList[0] && scaleList[0].id))
 
             const statePatch = buildStatePatch({
               selectedDoctor: this.data.selectedDoctor,
@@ -240,9 +240,9 @@ Component({
             }
 
             console.log('[step 5] setData 前 - 不育症诊断量表:', {
-              questionnaireName: testMappedScale?.questionnaireName,
-              templateId: testMappedScale?.templateId,
-              id: testMappedScale?.id,
+              questionnaireName: testMappedScale && testMappedScale.questionnaireName,
+              templateId: testMappedScale && testMappedScale.templateId,
+              id: testMappedScale && testMappedScale.id,
               scale: testMappedScale
             })
 
@@ -253,15 +253,15 @@ Component({
               const testSetDataScale = this.data.scaleList.find((scale: any) => scale.questionnaireName.includes('不育症诊断量表'))
               const testVisibleScale = this.data.visibleScales.find((scale: any) => scale.questionnaireName.includes('不育症诊断量表'))
               console.log('[step 6] setData 后 scaleList - 不育症诊断量表:', {
-                questionnaireName: testSetDataScale?.questionnaireName,
-                templateId: testSetDataScale?.templateId,
-                id: testSetDataScale?.id,
+                questionnaireName: testSetDataScale && testSetDataScale.questionnaireName,
+                templateId: testSetDataScale && testSetDataScale.templateId,
+                id: testSetDataScale && testSetDataScale.id,
                 scale: testSetDataScale
               })
               console.log('[step 6] setData 后 visibleScales - 不育症诊断量表:', {
-                questionnaireName: testVisibleScale?.questionnaireName,
-                templateId: testVisibleScale?.templateId,
-                id: testVisibleScale?.id,
+                questionnaireName: testVisibleScale && testVisibleScale.questionnaireName,
+                templateId: testVisibleScale && testVisibleScale.templateId,
+                id: testVisibleScale && testVisibleScale.id,
                 scale: testVisibleScale
               })
 
