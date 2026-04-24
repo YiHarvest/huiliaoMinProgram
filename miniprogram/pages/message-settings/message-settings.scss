@@ -1,0 +1,248 @@
+.message-settings {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  padding: 20rpx;
+}
+
+.header {
+  background: linear-gradient(135deg, #00A88F 0%, #008f7a 100%);
+  border-radius: 16rpx;
+  padding: 40rpx 30rpx;
+  margin-bottom: 20rpx;
+  color: white;
+}
+
+.title {
+  display: block;
+  font-size: 36rpx;
+  font-weight: bold;
+  margin-bottom: 10rpx;
+}
+
+.subtitle {
+  display: block;
+  font-size: 24rpx;
+  opacity: 0.9;
+}
+
+.guide-card {
+  background: white;
+  border-radius: 12rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.guide-icon {
+  font-size: 32rpx;
+  flex-shrink: 0;
+}
+
+.guide-content {
+  flex: 1;
+}
+
+.guide-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 6rpx;
+}
+
+.guide-text {
+  display: block;
+  font-size: 24rpx;
+  color: #666;
+  line-height: 1.4;
+}
+
+.guide-action {
+  flex-shrink: 0;
+}
+
+.guide-link {
+  color: #00A88F;
+  font-size: 24rpx;
+}
+
+.config-warning {
+  background: #fff3e0;
+  border-radius: 12rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.warning-icon {
+  font-size: 28rpx;
+  flex-shrink: 0;
+}
+
+.warning-text {
+  font-size: 26rpx;
+  color: #e65100;
+  line-height: 1.4;
+}
+
+.subscription-list {
+  background: white;
+  border-radius: 12rpx;
+  overflow: hidden;
+  margin-bottom: 20rpx;
+}
+
+.list-header {
+  padding: 24rpx 30rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.list-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.subscription-item {
+  display: flex;
+  align-items: center;
+  padding: 24rpx 30rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.subscription-item:last-child {
+  border-bottom: none;
+}
+
+.item-info {
+  flex: 1;
+}
+
+.item-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.item-name {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333;
+  margin-right: 12rpx;
+}
+
+.item-status {
+  background: #e8f5e9;
+  border-radius: 8rpx;
+  padding: 4rpx 12rpx;
+}
+
+.status-text {
+  font-size: 20rpx;
+  color: #4caf50;
+}
+
+.item-description {
+  display: block;
+  font-size: 24rpx;
+  color: #999;
+  line-height: 1.4;
+}
+
+.item-action {
+  flex-shrink: 0;
+  background: #00A88F;
+  border-radius: 8rpx;
+  padding: 12rpx 24rpx;
+}
+
+.item-action.disabled {
+  background: #e0e0e0;
+}
+
+.item-action.subscribed {
+  background: #e8f5e9;
+}
+
+.action-text {
+  font-size: 24rpx;
+  color: white;
+}
+
+.item-action.disabled .action-text {
+  color: #999;
+}
+
+.item-action.subscribed .action-text {
+  color: #4caf50;
+}
+
+.actions {
+  margin-bottom: 20rpx;
+}
+
+.subscribe-all-btn {
+  background: linear-gradient(135deg, #00A88F 0%, #008f7a 100%);
+  border-radius: 12rpx;
+  color: white;
+  font-size: 28rpx;
+  padding: 24rpx;
+  border: none;
+}
+
+.subscribe-all-btn[disabled] {
+  background: #e0e0e0;
+  color: #999;
+}
+
+.settings-section {
+  background: white;
+  border-radius: 12rpx;
+  overflow: hidden;
+}
+
+.settings-item {
+  display: flex;
+  align-items: center;
+  padding: 24rpx 30rpx;
+}
+
+.settings-info {
+  flex: 1;
+}
+
+.settings-title {
+  display: block;
+  font-size: 28rpx;
+  color: #333;
+  margin-bottom: 6rpx;
+}
+
+.settings-desc {
+  display: block;
+  font-size: 24rpx;
+  color: #999;
+}
+
+.settings-arrow {
+  flex-shrink: 0;
+}
+
+.arrow {
+  font-size: 40rpx;
+  color: #ccc;
+}
+
+.loading {
+  text-align: center;
+  padding: 60rpx 0;
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: #999;
+}

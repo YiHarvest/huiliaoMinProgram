@@ -1,0 +1,290 @@
+<view class="page">
+  <scroll-view class="page-scroll" scroll-y enable-flex="true" scroll-into-view="{{reportScrollId}}">
+    <view class="content">
+      <view class="section-card media-card">
+        <view class="card-head">
+          <view class="card-title-row">
+            <text class="card-title">舌苔视频</text>
+            <text class="field-tag field-tag-required">必填</text>
+          </view>
+        </view>
+
+        <view class="media-row">
+          <view class="upload-panel {{tongueVideo ? 'upload-panel-filled' : ''}}">
+            <view class="upload-placeholder" wx:if="{{!tongueVideo}}" bindtap="onChooseVideo">
+              <text class="upload-plus">+</text>
+            </view>
+            <view class="upload-preview upload-preview-video" wx:else bindtap="onPreviewVideo">
+              <image class="upload-preview-image" src="{{tongueVideo.thumbUrl}}" mode="aspectFill"></image>
+              <view class="video-play">▶</view>
+              <text class="upload-badge">已上传</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="media-action-row" wx:if="{{tongueVideo}}">
+          <text class="media-action" bindtap="onPreviewVideo">预览</text>
+          <text class="media-action" bindtap="onRechooseVideo">重新上传</text>
+          <text class="media-action media-action-danger" bindtap="onRemoveMedia" data-field="tongueVideo">删除</text>
+        </view>
+
+        <view class="video-file-info" wx:if="{{tongueVideo}}">
+          <text class="video-file-name">{{tongueVideo.name}}</text>
+          <text class="video-file-size">{{tongueVideo.sizeLabel}}</text>
+        </view>
+
+        <view class="video-meta-row" wx:if="{{tongueVideo}}">
+          <text class="video-meta-chip">时长 {{tongueVideo.durationLabel}}</text>
+          <text class="video-meta-chip">帧率 {{tongueVideo.fpsLabel}}</text>
+        </view>
+
+        <text class="media-hint">请上传舌苔视频，确保画面中同时有人脸和舌头。</text>
+        <text class="media-hint media-limit">{{videoLimitText}}</text>
+        <text class="status-text" wx:if="{{progressText}}">{{progressText}}</text>
+        <view class="tips-box" wx:if="{{tipsText}}">
+          <text class="tips-title">分析提示</text>
+          <text class="tips-text">{{tipsText}}</text>
+        </view>
+      </view>
+
+      <view class="section-card media-card">
+        <view class="card-head">
+          <view class="card-title-row">
+            <text class="card-title">舌上照片</text>
+            <text class="field-tag field-tag-optional">选填</text>
+          </view>
+        </view>
+        <view class="media-row">
+          <view class="upload-panel {{topImage ? 'upload-panel-filled' : ''}}">
+            <view class="upload-placeholder" wx:if="{{!topImage}}" data-field="topImage" bindtap="onChooseImage">
+              <text class="upload-plus">+</text>
+            </view>
+            <view class="upload-preview" wx:else>
+              <image class="upload-preview-image" src="{{topImage.url}}" mode="aspectFill" bindtap="onPreviewImage" data-url="{{topImage.url}}"></image>
+              <text class="upload-badge">已上传</text>
+            </view>
+          </view>
+          <view class="example-panel">
+            <image class="example-image" src="{{exampleAssets.topImage}}" mode="aspectFill"></image>
+            <view class="example-label">示例</view>
+          </view>
+        </view>
+        <view class="media-action-row" wx:if="{{topImage}}">
+          <text class="media-action" bindtap="onPreviewImage" data-url="{{topImage.url}}">预览</text>
+          <text class="media-action" bindtap="onRechooseImage" data-field="topImage">重新上传</text>
+          <text class="media-action media-action-danger" bindtap="onRemoveMedia" data-field="topImage">删除</text>
+        </view>
+        <text class="media-hint">请在自然光照下拍摄舌头上表面，确保舌苔清晰可见。</text>
+      </view>
+
+      <view class="section-card media-card">
+        <view class="card-head">
+          <view class="card-title-row">
+            <text class="card-title">舌下照片</text>
+            <text class="field-tag field-tag-optional">选填</text>
+          </view>
+        </view>
+        <view class="media-row">
+          <view class="upload-panel {{bottomImage ? 'upload-panel-filled' : ''}}">
+            <view class="upload-placeholder" wx:if="{{!bottomImage}}" data-field="bottomImage" bindtap="onChooseImage">
+              <text class="upload-plus">+</text>
+            </view>
+            <view class="upload-preview" wx:else>
+              <image class="upload-preview-image" src="{{bottomImage.url}}" mode="aspectFill" bindtap="onPreviewImage" data-url="{{bottomImage.url}}"></image>
+              <text class="upload-badge">已上传</text>
+            </view>
+          </view>
+          <view class="example-panel">
+            <image class="example-image" src="{{exampleAssets.bottomImage}}" mode="aspectFill"></image>
+            <view class="example-label">示例</view>
+          </view>
+        </view>
+        <view class="media-action-row" wx:if="{{bottomImage}}">
+          <text class="media-action" bindtap="onPreviewImage" data-url="{{bottomImage.url}}">预览</text>
+          <text class="media-action" bindtap="onRechooseImage" data-field="bottomImage">重新上传</text>
+          <text class="media-action media-action-danger" bindtap="onRemoveMedia" data-field="bottomImage">删除</text>
+        </view>
+        <text class="media-hint">请在自然光照下拍摄舌头下表面，确保舌苔清晰可见。</text>
+      </view>
+
+      <view class="section-card media-card">
+        <view class="card-head">
+          <view class="card-title-row">
+            <text class="card-title">面部照片</text>
+            <text class="field-tag field-tag-optional">选填</text>
+          </view>
+        </view>
+        <view class="media-row">
+          <view class="upload-panel {{faceImage ? 'upload-panel-filled' : ''}}">
+            <view class="upload-placeholder" wx:if="{{!faceImage}}" data-field="faceImage" bindtap="onChooseImage">
+              <text class="upload-plus">+</text>
+            </view>
+            <view class="upload-preview" wx:else>
+              <image class="upload-preview-image" src="{{faceImage.url}}" mode="aspectFill" bindtap="onPreviewImage" data-url="{{faceImage.url}}"></image>
+              <text class="upload-badge">已上传</text>
+            </view>
+          </view>
+          <view class="example-panel">
+            <image class="example-image" src="{{exampleAssets.faceImage}}" mode="aspectFill"></image>
+            <view class="example-label">示例</view>
+          </view>
+        </view>
+        <view class="media-action-row" wx:if="{{faceImage}}">
+          <text class="media-action" bindtap="onPreviewImage" data-url="{{faceImage.url}}">预览</text>
+          <text class="media-action" bindtap="onRechooseImage" data-field="faceImage">重新上传</text>
+          <text class="media-action media-action-danger" bindtap="onRemoveMedia" data-field="faceImage">删除</text>
+        </view>
+        <text class="media-hint">请在自然光照下拍摄，无美颜、化妆，避免识别误差，保持表情自然。</text>
+      </view>
+
+      <view class="section-card requirement-card">
+        <view class="card-head">
+          <view class="card-title-row">
+            <text class="card-title">上传要求</text>
+          </view>
+        </view>
+        <view class="requirement-list">
+          <view class="requirement-item" wx:for="{{shootingRequirements}}" wx:key="*this">
+            <text class="requirement-dot"></text>
+            <text class="requirement-text">{{item}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view id="analysis-report" class="section-card report-card" wx:if="{{hasReport && report}}">
+        <view class="card-head">
+          <view class="card-title-row">
+            <text class="card-title">分析报告</text>
+            <text class="field-tag field-tag-report">已生成</text>
+          </view>
+        </view>
+
+        <view class="report-block">
+          <text class="report-block-title">总体结论</text>
+          <text class="report-summary">{{report.overall.subject}} {{report.overall.score ? ('· ' + report.overall.score + '分') : ''}}</text>
+          <text class="report-summary">{{report.overall.summary}}</text>
+        </view>
+
+        <view class="report-block" wx:if="{{report.overall.riskWarnings.length}}">
+          <text class="report-block-title">风险提示</text>
+          <view class="report-list">
+            <view class="report-list-item" wx:for="{{report.overall.riskWarnings}}" wx:key="*this">
+              <text class="report-list-dot"></text>
+              <text class="report-list-text">{{item}}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="report-block" wx:if="{{report.healthSuggestions.diet.length}}">
+          <text class="report-block-title">调理建议 · 饮食</text>
+          <view class="diet-card" wx:for="{{report.healthSuggestions.diet}}" wx:key="name">
+            <text class="diet-name">{{item.name}}</text>
+            <text class="diet-effect">{{item.effect}}</text>
+          </view>
+        </view>
+
+        <view class="report-block" wx:if="{{report.healthSuggestions.exercise}}">
+          <text class="report-block-title">调理建议 · 运动</text>
+          <text class="report-summary">{{report.healthSuggestions.exercise}}</text>
+        </view>
+
+        <view class="report-block" wx:if="{{report.healthSuggestions.physicalTherapy}}">
+          <text class="report-block-title">调理建议 · 理疗</text>
+          <text class="report-summary">{{report.healthSuggestions.physicalTherapy}}</text>
+        </view>
+
+        <view class="report-block" wx:if="{{report.tongueAnalysis.summary || reportView.tongueColor.length || reportView.tongueShape.length || reportView.coatingTexture.length || reportView.coatingColor.length}}">
+          <text class="report-block-title">舌象分析</text>
+          <text class="report-summary" wx:if="{{report.tongueAnalysis.summary}}">{{report.tongueAnalysis.summary}}</text>
+          <view class="report-list" wx:if="{{reportView.tongueColor.length}}">
+            <view class="report-list-item" wx:for="{{reportView.tongueColor}}" wx:key="*this">
+              <text class="report-list-dot"></text>
+              <text class="report-list-text">舌色：{{item}}</text>
+            </view>
+          </view>
+          <view class="report-list" wx:if="{{reportView.tongueShape.length}}">
+            <view class="report-list-item" wx:for="{{reportView.tongueShape}}" wx:key="*this">
+              <text class="report-list-dot"></text>
+              <text class="report-list-text">舌形：{{item}}</text>
+            </view>
+          </view>
+          <view class="report-list" wx:if="{{reportView.coatingTexture.length}}">
+            <view class="report-list-item" wx:for="{{reportView.coatingTexture}}" wx:key="*this">
+              <text class="report-list-dot"></text>
+              <text class="report-list-text">苔质：{{item}}</text>
+            </view>
+          </view>
+          <view class="report-list" wx:if="{{reportView.coatingColor.length}}">
+            <view class="report-list-item" wx:for="{{reportView.coatingColor}}" wx:key="*this">
+              <text class="report-list-dot"></text>
+              <text class="report-list-text">苔色：{{item}}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="report-block" wx:if="{{report.faceAnalysis.summary || reportView.complexion.length || reportView.nose.length || reportView.shape.length || reportView.yinTang.length || reportView.lipColor.length || reportView.eyeState.length}}">
+          <text class="report-block-title">面诊分析</text>
+          <text class="report-summary" wx:if="{{report.faceAnalysis.summary}}">{{report.faceAnalysis.summary}}</text>
+          <view class="report-list" wx:if="{{reportView.complexion.length}}">
+            <view class="report-list-item" wx:for="{{reportView.complexion}}" wx:key="*this">
+              <text class="report-list-dot"></text>
+              <text class="report-list-text">面色：{{item}}</text>
+            </view>
+          </view>
+          <view class="report-list" wx:if="{{reportView.nose.length}}">
+            <view class="report-list-item" wx:for="{{reportView.nose}}" wx:key="*this">
+              <text class="report-list-dot"></text>
+              <text class="report-list-text">鼻部：{{item}}</text>
+            </view>
+          </view>
+          <view class="report-list" wx:if="{{reportView.shape.length}}">
+            <view class="report-list-item" wx:for="{{reportView.shape}}" wx:key="*this">
+              <text class="report-list-dot"></text>
+              <text class="report-list-text">面形：{{item}}</text>
+            </view>
+          </view>
+          <view class="report-list" wx:if="{{reportView.yinTang.length}}">
+            <view class="report-list-item" wx:for="{{reportView.yinTang}}" wx:key="*this">
+              <text class="report-list-dot"></text>
+              <text class="report-list-text">印堂：{{item}}</text>
+            </view>
+          </view>
+          <view class="report-list" wx:if="{{reportView.lipColor.length}}">
+            <view class="report-list-item" wx:for="{{reportView.lipColor}}" wx:key="*this">
+              <text class="report-list-dot"></text>
+              <text class="report-list-text">唇色：{{item}}</text>
+            </view>
+          </view>
+          <view class="report-list" wx:if="{{reportView.eyeState.length}}">
+            <view class="report-list-item" wx:for="{{reportView.eyeState}}" wx:key="*this">
+              <text class="report-list-dot"></text>
+              <text class="report-list-text">眼周：{{item}}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="report-block" wx:if="{{report.healthAnalysis.subjectName || report.healthAnalysis.subjectFeature || report.healthAnalysis.subjectOutline || report.healthAnalysis.dietAccept || report.healthAnalysis.dietReject || report.healthAnalysis.exerciseAccept || report.healthAnalysis.exerciseReject || report.healthAnalysis.physicalPosition || report.healthAnalysis.physicalSearch || report.healthAnalysis.physicalOperation}}">
+          <text class="report-block-title">体质分析</text>
+          <text class="report-summary" wx:if="{{report.healthAnalysis.subjectName}}">体质：{{report.healthAnalysis.subjectName}}</text>
+          <text class="report-summary" wx:if="{{report.healthAnalysis.subjectFeature}}">特征：{{report.healthAnalysis.subjectFeature}}</text>
+          <text class="report-summary" wx:if="{{report.healthAnalysis.subjectOutline}}">表现：{{report.healthAnalysis.subjectOutline}}</text>
+          <text class="report-subtitle" wx:if="{{report.healthAnalysis.dietAccept}}">宜食：{{report.healthAnalysis.dietAccept}}</text>
+          <text class="report-subtitle" wx:if="{{report.healthAnalysis.dietReject}}">忌食：{{report.healthAnalysis.dietReject}}</text>
+          <text class="report-subtitle" wx:if="{{report.healthAnalysis.exerciseAccept}}">适宜运动：{{report.healthAnalysis.exerciseAccept}}</text>
+          <text class="report-subtitle" wx:if="{{report.healthAnalysis.exerciseReject}}">运动禁忌：{{report.healthAnalysis.exerciseReject}}</text>
+          <text class="report-subtitle" wx:if="{{report.healthAnalysis.physicalPosition}}">推荐穴位：{{report.healthAnalysis.physicalPosition}}</text>
+          <text class="report-summary" wx:if="{{report.healthAnalysis.physicalSearch}}">取穴说明：{{report.healthAnalysis.physicalSearch}}</text>
+          <text class="report-summary" wx:if="{{report.healthAnalysis.physicalOperation}}">操作建议：{{report.healthAnalysis.physicalOperation}}</text>
+        </view>
+      </view>
+
+      <view class="submit-spacer"></view>
+    </view>
+  </scroll-view>
+
+  <view class="submit-bar">
+    <button class="submit-btn {{(!canSubmit || isSubmitting) ? 'submit-btn-disabled' : ''}}" disabled="{{!canSubmit || isSubmitting}}" bindtap="onSubmit">
+      {{isSubmitting ? '正在上传并分析，请稍候' : '上传分析'}}
+    </button>
+  </view>
+</view>

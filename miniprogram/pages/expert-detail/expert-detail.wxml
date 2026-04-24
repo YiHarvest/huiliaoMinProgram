@@ -1,0 +1,84 @@
+<view class="page">
+  <scroll-view class="page-scroll" scroll-y scroll-with-animation="true">
+    <view class="content">
+      <!-- 专家卡片 -->
+      <view class="expert-card">
+        <view class="expert-header">
+          <view class="expert-info">
+            <text class="expert-name">{{expert.name}}</text>
+            <text class="expert-title">{{expert.title}} · {{expert.department}}</text>
+            <view class="expert-focus">
+              <text class="focus-tag" wx:for="{{expert.focus}}" wx:key="*this">{{item}}</text>
+            </view>
+          </view>
+          <view class="expert-avatar" style="background-color: var(--theme-{{expert.theme}});">
+            <text class="avatar-text">{{expert.name.charAt(0)}}</text>
+          </view>
+        </view>
+        
+        <text class="expert-summary" user-select>{{expert.summary}}</text>
+        
+        <!-- 出诊时间 -->
+        <view class="schedule-section">
+          <text class="section-title">出诊时间</text>
+          <text class="schedule-info" user-select>{{expert.schedule}}</text>
+        </view>
+      </view>
+      
+      <!-- 详细介绍 -->
+      <view class="detail-section">
+        <text class="section-title">个人简介</text>
+        <text class="detail-text" user-select>{{expert.details.intro}}</text>
+      </view>
+      
+      <view class="detail-section">
+        <text class="section-title">荣誉称号</text>
+        <text class="detail-text" user-select>{{expert.details.honors}}</text>
+      </view>
+      
+      <view class="detail-section">
+        <text class="section-title">专业特长</text>
+        <text class="detail-text" user-select>{{expert.details.expertise}}</text>
+      </view>
+      
+      <view class="detail-section">
+        <text class="section-title">详细出诊安排</text>
+        <view class="schedule-table">
+          <view class="schedule-row">
+            <text class="schedule-day">周一</text>
+            <text class="schedule-time" user-select>{{expert.details.schedule.monday}}</text>
+          </view>
+          <view class="schedule-row">
+            <text class="schedule-day">周二</text>
+            <text class="schedule-time" user-select>{{expert.details.schedule.tuesday}}</text>
+          </view>
+          <view class="schedule-row">
+            <text class="schedule-day">周三</text>
+            <text class="schedule-time" user-select>{{expert.details.schedule.wednesday}}</text>
+          </view>
+          <view class="schedule-row">
+            <text class="schedule-day">周四</text>
+            <text class="schedule-time" user-select>{{expert.details.schedule.thursday}}</text>
+          </view>
+          <view class="schedule-row">
+            <text class="schedule-day">周五</text>
+            <text class="schedule-time" user-select>{{expert.details.schedule.friday}}</text>
+          </view>
+          <view class="schedule-row">
+            <text class="schedule-day">周六</text>
+            <text class="schedule-time" user-select>{{expert.details.schedule.saturday}}</text>
+          </view>
+          <view class="schedule-row">
+            <text class="schedule-day">周日</text>
+            <text class="schedule-time" user-select>{{expert.details.schedule.sunday}}</text>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 底部操作 -->
+      <view class="action-section">
+        <button class="action-btn primary" bindtap="onConsultAssistant">咨询专属AI助手</button>
+      </view>
+    </view>
+  </scroll-view>
+</view>

@@ -1,0 +1,71 @@
+<view class="page">
+  <scroll-view class="page-scroll" scroll-y enable-flex="true">
+    <view class="content">
+      <view class="section-card">
+        <view class="card-head">
+          <view class="card-title-row">
+            <text class="card-title">医生信息</text>
+            <text class="field-tag field-tag-required">必填</text>
+          </view>
+        </view>
+
+        <view class="doctor-selector" bindtap="onChooseDoctor" hover-class="doctor-selector-hover" hover-stay-time="80">
+          <view class="doctor-content" wx:if="{{selectedDoctor}}">
+            <text class="doctor-name">{{selectedDoctor.name}}</text>
+            <text class="doctor-meta">{{selectedDoctor.department}}</text>
+            <view class="doctor-tag-row">
+              <text class="doctor-tag" wx:for="{{selectedDoctor.tags}}" wx:key="*this">{{item}}</text>
+            </view>
+          </view>
+          <view class="doctor-content doctor-content-placeholder" wx:else>
+            <text class="doctor-placeholder">确认医生信息</text>
+          </view>
+          <text class="doctor-arrow">></text>
+        </view>
+      </view>
+
+      <view class="section-card">
+        <view class="report-head">
+          <view class="report-title-wrap">
+            <text class="card-title">上传报告图片</text>
+            <text class="report-hint">支持 jpg、png、gif 等图片格式</text>
+          </view>
+          <text class="report-count">{{reportImages.length}}/{{maxReportImages}}</text>
+        </view>
+
+        <view class="report-grid">
+          <view
+            class="report-item"
+            wx:for="{{reportImages}}"
+            wx:key="url"
+          >
+            <image
+              class="report-image"
+              src="{{item.url}}"
+              mode="aspectFill"
+              bindtap="onPreviewReportImage"
+              data-url="{{item.url}}"
+            />
+            <view class="report-remove" bindtap="onRemoveReportImage" data-index="{{index}}">×</view>
+          </view>
+
+          <view
+            class="report-upload {{reportImages.length >= maxReportImages ? 'report-upload-disabled' : ''}}"
+            wx:if="{{reportImages.length < maxReportImages}}"
+            bindtap="onChooseReportImages"
+          >
+            <text class="upload-plus">+</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="submit-spacer"></view>
+    </view>
+  </scroll-view>
+
+  <view class="submit-bar">
+    <button class="submit-btn {{!canSubmit ? 'submit-btn-disabled' : ''}}" disabled="{{!canSubmit}}" bindtap="onSubmit">
+      提交报告
+    </button>
+  </view>
+</view>
