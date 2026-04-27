@@ -22,7 +22,7 @@ export const modeArticles: ModeArticle[] = [
     cardSummary: '围绕公众号、互联网医院完成体系接入',
     title: '如何接入医院官方体系',
     lead: '这篇内容回答榕慧模式如何嵌入医院体系，确保专家服务不是外置工具，而是与门诊、科普、咨询等真实业务场景协同运转。',
-    coverImage: '/assets/home-banner-hero-cropped.png',
+    coverImage: '',
     sections: [
       {
         title: '背景问题',
@@ -69,7 +69,7 @@ export const modeArticles: ModeArticle[] = [
     cardSummary: '通过量表、随访与科普沉淀患者关系',
     title: '如何构建私域患者池',
     lead: '这篇内容回答患者关系为什么不能只停留在单次问诊，以及榕慧模式如何把触达、教育和随访变成可持续连接。',
-    coverImage: '/assets/home-banner-hero-cropped.png',
+    coverImage: '',
     sections: [
       {
         title: '背景问题',
@@ -116,7 +116,7 @@ export const modeArticles: ModeArticle[] = [
     cardSummary: '整合知识库、陪伴与数据分析能力',
     title: '如何形成长期服务能力',
     lead: '这篇内容回答为什么很多项目只能短期上线、无法长期运转，以及榕慧模式如何用 AI 和数据帮助专家建立稳定服务能力。',
-    coverImage: '/assets/home-banner-hero-cropped.png',
+    coverImage: '',
     sections: [
       {
         title: '背景问题',

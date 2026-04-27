@@ -1,0 +1,100 @@
+<view class="page">
+  <scroll-view class="page-scroll" scroll-y enable-flex="true">
+    <view class="content">
+      <view class="section-card">
+        <view class="card-head">
+          <view class="card-title-row">
+            <text class="card-title">{{questionnaireName || '问卷填写'}}</text>
+          </view>
+        </view>
+
+        <view class="questionnaire-content">
+          <view wx:if="{{loading}}" class="loading-section">
+            <text class="loading-text">加载中...</text>
+          </view>
+
+          <view wx:elif="{{submitted && !isRefilling}}" class="success-section">
+            <view class="success-badge">
+              <text class="success-badge-icon">v</text>
+            </view>
+            <text class="success-title">您已经成功提交</text>
+            <text class="success-desc">如需修改结果，可重新填写一次，系统将以您最新一次提交为准。</text>
+            <button class="refill-btn" bindtap="startRefillQuestionnaire">重新填写</button>
+          </view>
+
+          <view wx:else>
+            <view class="progress-section">
+              <view class="progress-info">
+                <text class="total-count">共 {{totalCount}} 题</text>
+                <text class="answered-count">已完成 {{answeredCount}} / {{totalCount}}</text>
+              </view>
+              <view class="progress-bar">
+                <view class="progress-fill" style="width: {{progressPercent}}%"></view>
+              </view>
+            </view>
+
+            <view class="questions-list">
+              <view
+                wx:for="{{questions}}"
+                wx:key="subjectId"
+                wx:for-item="question"
+                class="question-item"
+              >
+                <view class="question-header">
+                  <text class="question-number">{{index + 1}}.</text>
+                  <text class="question-title">{{question.title}}</text>
+                  <text wx:if="{{question.isRequired}}" class="required-mark">*</text>
+                </view>
+
+                <!-- 选择题 -->
+                <radio-group wx:if="{{question.options && question.options.length > 0}}" bindchange="handleOptionChange" data-subject-id="{{question.subjectId + ''}}">
+                  <view class="options-list">
+                    <label
+                      wx:for="{{question.options}}"
+                      wx:key="value"
+                      wx:for-item="option"
+                      class="option-item {{answers[question.subjectId] === option.value ? 'option-item--selected' : ''}}"
+                    >
+                      <view class="option-indicator">
+                          <radio
+                            class="option-radio"
+                            value="{{option.value}}"
+                            checked="{{answers[question.subjectId] === option.value}}"
+                            color="#1890ff"
+                          />
+                        </view>
+                        <text class="option-text">{{option.label}}</text>
+                    </label>
+                  </view>
+                </radio-group>
+                
+                <!-- 文本题 -->
+                <view wx:else class="options-list">
+                  <view class="option-item">
+                    <view class="option-indicator">
+                      <view class="text-input-placeholder"></view>
+                    </view>
+                    <textarea
+                      class="text-input-inner"
+                      placeholder="请输入答案（如：无或具体病史）"
+                      placeholder-style="font-size:22rpx;color:#bbbbbb;"
+                      value="{{answers[question.subjectId]}}"
+                      bindinput="handleTextInput"
+                      data-subject-id="{{question.subjectId + ''}}"
+                      auto-height
+                    />
+                  </view>
+                </view>
+              </view>
+            </view>
+
+            <view class="submit-section">
+              <button class="submit-btn" bindtap="submitQuestionnaire">{{submitted ? '重新提交问卷' : '提交问卷'}}</button>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+</view>
+

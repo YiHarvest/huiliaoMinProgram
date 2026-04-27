@@ -132,6 +132,11 @@ Component({
           duration: 300
         })
       }
+    },
+    onMessageSettings() {
+      wx.navigateTo({
+        url: '/pages/message-settings/message-settings'
+      })
     }
   }
 })

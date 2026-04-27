@@ -18,7 +18,7 @@ type ServiceItem = {
   key: string
   title: string
   desc: string
-  iconText: string
+  iconType: 'message' | 'tongue' | 'doctor' | 'bell'
   theme: string
   action: 'toast' | 'experts' | 'tongue-upload' | 'assistant-chat'
 }
@@ -29,6 +29,12 @@ type RecentServiceItem = {
   time: string
   status: string
   actionText: string
+}
+
+type QuestionSuggestion = {
+  id: string
+  text: string
+  icon: string
 }
 
 const assistants: Record<AssistantId, AssistantProfile> = {
@@ -46,10 +52,10 @@ const assistants: Record<AssistantId, AssistantProfile> = {
   chen: {
     id: 'chen',
     name: '陈主任',
-    role: '专家门诊助手',
-    summary: '面向男科门诊服务、预约衔接与复诊指导',
-    description: '陈主任主要聚焦男科场景，适合处理预约挂号、诊前准备、评估结果辅助理解与诊后随访问题。',
-    tags: ['男科咨询', '门诊服务', '持续随访'],
+    role: '专家健康助手',
+    summary: '面向男科健康咨询、复诊指导与服务衔接',
+    description: '陈主任主要聚焦男科场景，适合处理诊前准备、评估结果辅助理解与诊后随访问题。',
+    tags: ['男科咨询', '健康指导', '持续随访'],
     accent: 'chen',
     avatar: '/assets/chen.jpg',
     status: '可切换使用'
@@ -61,32 +67,51 @@ const questionSuggestions: Record<AssistantId, string[]> = {
     '月经不规律需要先做什么检查？',
     '备孕前需要提前准备哪些事项？',
     '白带异常应该先观察哪些情况？',
-    '妇科复诊前要带哪些资料？'
+    '妇科复诊前要带哪些资料？',
+    '检查结果出来后要重点看什么？',
+    '日常饮食需要注意哪些方面？',
+    '经期腹痛一般怎么先处理？',
+    '备孕前需要补充哪些营养？'
   ],
   chen: [
     '如何预约陈主任门诊？',
     '复诊前需要准备哪些资料？',
     '评估结果出来后怎么理解？',
-    '门诊后如何持续随访？'
+    '门诊后如何持续随访？',
+    '检查前需要避免哪些事项？',
+    '报告里哪些指标需要重点关注？',
+    '门诊当天需要提前多久到院？',
+    '复诊后怎样安排后续检查？'
   ]
+}
+
+const QUESTION_BATCH_SIZE = 4
+
+function buildQuestionSuggestions(assistantId: AssistantId, pageIndex: number): QuestionSuggestion[] {
+  const pool = questionSuggestions[assistantId]
+  const totalPages = Math.max(1, Math.ceil(pool.length / QUESTION_BATCH_SIZE))
+  const normalizedPage = ((pageIndex % totalPages) + totalPages) % totalPages
+  const startIndex = normalizedPage * QUESTION_BATCH_SIZE
+
+  return pool.slice(startIndex, startIndex + QUESTION_BATCH_SIZE).map((text, index) => ({
+    id: `${assistantId}-${normalizedPage}-${index}`,
+    text,
+    icon: '✨'
+  }))
 }
 
 const serviceCatalog: Record<AssistantId, ServiceItem[]> = {
   xiaohui: [
-    { key: 'qa', title: '在线问答', desc: '快速发起妇科相关提问', iconText: '问', theme: 'teal', action: 'assistant-chat' },
-    { key: 'assessment', title: '健康评估', desc: '查看评估入口与报告', iconText: '评', theme: 'mint', action: 'toast' },
-    { key: 'tongue', title: '舌诊入口', desc: '进入舌诊识别流程', iconText: '舌', theme: 'cyan', action: 'tongue-upload' },
-    { key: 'doctor', title: '了解医生', desc: '查看合作医生与方向', iconText: '医', theme: 'gold', action: 'experts' },
-    { key: 'reminder', title: '服务提醒', desc: '订阅结果和随访通知', iconText: '提', theme: 'teal', action: 'toast' },
-    { key: 'wechat', title: '加企业微信', desc: '连接专属服务入口', iconText: '微', theme: 'cyan', action: 'toast' }
+    { key: 'qa', title: '在线问答', desc: '快速发起妇科相关提问', iconType: 'message', theme: 'teal', action: 'assistant-chat' },
+    { key: 'tongue', title: '舌诊入口', desc: '进入舌诊识别流程', iconType: 'tongue', theme: 'cyan', action: 'tongue-upload' },
+    { key: 'doctor', title: '了解医生', desc: '查看合作医生与方向', iconType: 'doctor', theme: 'gold', action: 'experts' },
+    { key: 'reminder', title: '服务提醒', desc: '订阅结果和随访通知', iconType: 'bell', theme: 'teal', action: 'toast' }
   ],
   chen: [
-    { key: 'qa', title: '在线问答', desc: '整理男科门诊核心问题', iconText: '问', theme: 'teal', action: 'assistant-chat' },
-    { key: 'booking', title: '预约挂号', desc: '衔接专家门诊预约', iconText: '约', theme: 'gold', action: 'toast' },
-    { key: 'assessment', title: '健康评估', desc: '辅助理解当前结果', iconText: '评', theme: 'mint', action: 'toast' },
-    { key: 'tongue', title: '舌诊入口', desc: '结合辨证信息查看', iconText: '舌', theme: 'cyan', action: 'tongue-upload' },
-    { key: 'reminder', title: '服务提醒', desc: '订阅随访和复诊通知', iconText: '提', theme: 'teal', action: 'toast' },
-    { key: 'wechat', title: '加企业微信', desc: '连接门诊服务通道', iconText: '微', theme: 'cyan', action: 'toast' }
+    { key: 'qa', title: '在线问答', desc: '整理男科健康核心问题', iconType: 'message', theme: 'teal', action: 'assistant-chat' },
+    { key: 'tongue', title: '舌诊入口', desc: '结合辨证信息查看', iconType: 'tongue', theme: 'cyan', action: 'tongue-upload' },
+    { key: 'doctor', title: '了解医生', desc: '查看合作医生与方向', iconType: 'doctor', theme: 'gold', action: 'experts' },
+    { key: 'reminder', title: '服务提醒', desc: '订阅随访和复诊通知', iconType: 'bell', theme: 'teal', action: 'toast' }
   ]
 }
 
@@ -125,9 +150,14 @@ function buildWorkbenchState(assistantId: AssistantId) {
     currentAssistant: assistants[assistantId],
     recommendedAssistantName: assistants[assistantId].name,
     serviceGrid: serviceCatalog[assistantId],
-    questionSuggestions: questionSuggestions[assistantId],
+    questionPageIndex: 0,
+    questionSuggestions: buildQuestionSuggestions(assistantId, 0),
     recentServices: recentServicesByAssistant[assistantId]
   }
+}
+
+function isAssistantId(value: string | undefined): value is AssistantId {
+  return value === 'xiaohui' || value === 'chen'
 }
 
 Component({
@@ -137,6 +167,27 @@ Component({
     assistants: Object.values(assistants),
     previewExperts: expertProfiles.slice(0, 3),
     ...buildWorkbenchState('xiaohui')
+  },
+  attached() {
+    const pages = getCurrentPages()
+    const currentPage = pages[pages.length - 1]
+    const options = currentPage && currentPage.options as Record<string, string | undefined> | undefined
+    const requestedAssistantId = options && options.assistantId
+
+    if (isAssistantId(requestedAssistantId)) {
+      this.setData({
+        qaDraft: '',
+        ...buildWorkbenchState(requestedAssistantId)
+      })
+      return
+    }
+
+    if (requestedAssistantId) {
+      this.setData({
+        qaDraft: '',
+        ...buildWorkbenchState('xiaohui')
+      })
+    }
   },
   methods: {
     onServiceTargetTap() {
@@ -155,6 +206,17 @@ Component({
       this.setData({
         qaDraft: '',
         ...buildWorkbenchState(assistantId)
+      })
+    },
+    onShuffleQuestions() {
+      const assistantId = this.data.currentAssistantId as AssistantId
+      const pool = questionSuggestions[assistantId]
+      const totalPages = Math.max(1, Math.ceil(pool.length / QUESTION_BATCH_SIZE))
+      const nextPageIndex = (this.data.questionPageIndex + 1) % totalPages
+
+      this.setData({
+        questionPageIndex: nextPageIndex,
+        questionSuggestions: buildQuestionSuggestions(assistantId, nextPageIndex)
       })
     },
     onMoreAssistants() {

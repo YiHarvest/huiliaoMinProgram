@@ -1,4 +1,6 @@
-﻿const TONGUE_API_BASE_URL = 'http://127.0.0.1:8020'
+import { handleSubscribeAuthorization } from '../../utils/subscribe'
+
+const TONGUE_API_BASE_URL = 'https://miniprogram.huiliaoyiyuan.com'
 const MAX_VIDEO_SIZE = 5 * 1024 * 1024
 const MIN_VIDEO_DURATION = 10
 const MAX_VIDEO_DURATION = 20
@@ -130,12 +132,10 @@ function validateVideoEntry(video: VideoEntry | null) {
     return '视频大小不能超过 5MB'
   }
 
-  // 只有当 duration > 0 时才校验时长（视频信息读取成功）
   if (video.duration > 0 && (video.duration <= MIN_VIDEO_DURATION || video.duration >= MAX_VIDEO_DURATION)) {
     return '视频时长需大于 10 秒且小于 20 秒'
   }
 
-  // 只有当 fps > 0 时才校验帧率（视频信息读取成功）
   if (video.fps > 0 && video.fps <= MIN_VIDEO_FPS) {
     return '视频帧率需大于 2fps'
   }
@@ -235,12 +235,12 @@ Component({
     },
     exampleVideoUrl: `${TONGUE_API_BASE_URL}/examples/tongue-video`,
     shootingRequirements: [
-      '视频必须上传，舌上照片、舌下照片、面部照片均为选填。',
-      '视频大小不能超过 5MB。',
-      '视频时长需大于 10 秒且小于 20 秒。',
-      '视频帧率需大于 2fps；若设备端无法识别，以后端分析结果为准。',
-      '视频画面中需要同时出现人脸和舌头，画面保持清晰稳定。'
-    ]
+      '自然光照下拍摄，避免使用闪光灯',
+      '舌头自然伸出，放松不要用力',
+      '拍摄前不要吃有色食物或饮料',
+      '确保图片清晰，不要模糊或过曝'
+    ],
+    openid: ''
   },
   methods: {
     onChooseImage(event: WechatMiniprogram.CustomEvent) {
@@ -285,7 +285,6 @@ Component({
             return
           }
 
-          // 尝试获取视频信息，但即使失败也允许上传
           wx.getVideoInfo({
             src: file.tempFilePath,
             success: info => {
@@ -324,7 +323,6 @@ Component({
               })
             },
             fail: () => {
-              // 视频信息读取失败，但仍允许上传（只做大小校验）
               if (file.size > MAX_VIDEO_SIZE) {
                 wx.showToast({
                   title: '视频大小不能超过 5MB',
@@ -339,8 +337,8 @@ Component({
                 name: getFileName(file.tempFilePath),
                 size: file.size,
                 sizeLabel: formatFileSize(file.size),
-                duration: 0, // 无法获取
-                fps: 0, // 无法获取
+                duration: 0,
+                fps: 0,
                 durationLabel: '未知',
                 fpsLabel: '未知'
               }
@@ -497,6 +495,20 @@ Component({
           })
         })
       }
+    },
+    async onSubscribeReminder() {
+      const openid = this.data.openid
+      
+      if (!openid) {
+        wx.showModal({
+          title: '提示',
+          content: '请先登录后再开启消息提醒',
+          showCancel: false
+        })
+        return
+      }
+
+      await handleSubscribeAuthorization(openid, ['tongue_result'])
     }
   }
 })

@@ -1,4 +1,4 @@
-﻿export const formatTime = (date: Date) => {
+export const formatTime = (date: Date) => {
   const year = date.getFullYear()
   const month = date.getMonth() + 1
   const day = date.getDate()
@@ -36,14 +36,15 @@ type ChatErrorReply = {
   error?: string
 }
 
-const CHAT_PROXY_BASE_URL = 'http://127.0.0.1:8010'
+const CHAT_PROXY_BASE_URL = 'https://miniprogram.huiliaoyiyuan.com'
+const CHAT_REQUEST_TIMEOUT = 30000
 
 export function requestAssistantReply(payload: ChatRequestPayload): Promise<ChatReply> {
   return new Promise((resolve, reject) => {
     wx.request({
       url: `${CHAT_PROXY_BASE_URL}/api/chat`,
       method: 'POST',
-      timeout: 15000,
+      timeout: CHAT_REQUEST_TIMEOUT,
       data: payload,
       header: {
         'content-type': 'application/json'
@@ -69,7 +70,14 @@ export function requestAssistantReply(payload: ChatRequestPayload): Promise<Chat
         })
       },
       fail: error => {
-        reject(new Error(error.errMsg || '智能助手服务请求失败'))
+        const errMsg = error.errMsg || '智能助手服务请求失败'
+
+        if (errMsg.includes('timeout')) {
+          reject(new Error(`智能助手响应较慢，请稍后重试（请求超时 ${CHAT_REQUEST_TIMEOUT / 1000} 秒）`))
+          return
+        }
+
+        reject(new Error(errMsg))
       }
     })
   })

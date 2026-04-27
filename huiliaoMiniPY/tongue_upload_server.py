@@ -1,18 +1,20 @@
 import cgi
 import json
-import os
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Optional
+from urllib import parse
 
+from config import config
+from db import get_tongue_report, save_tongue_report
 from test_shezheng_api import (
     MAX_POLL_COUNT,
     POLL_INTERVAL_SECONDS,
     resolve_video_path,
     wait_for_health_analysis,
 )
-from config import config
+from wechat_subscription import send_subscribe_message
 
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_DIR = BASE_DIR / 'uploads'
@@ -61,19 +63,19 @@ def build_report_payload(result: dict[str, Any]) -> dict[str, Any]:
             'subject': assessment.get('subject') or '',
             'score': assessment.get('score'),
             'summary': assessment.get('summary') or '',
-            'riskWarnings': assessment.get('riskWarnings') or []
+            'riskWarnings': assessment.get('riskWarnings') or [],
         },
         'healthSuggestions': {
             'diet': suggestions.get('diet') or [],
             'exercise': suggestions.get('exercise') or '',
-            'physicalTherapy': suggestions.get('physicalTherapy') or ''
+            'physicalTherapy': suggestions.get('physicalTherapy') or '',
         },
         'tongueAnalysis': {
             'summary': tongue.get('summary') or '',
             'tongueColor': tongue.get('tongueColor') or [],
             'tongueShape': tongue.get('tongueShape') or [],
             'coatingTexture': tongue.get('coatingTexture') or [],
-            'coatingColor': tongue.get('coatingColor') or []
+            'coatingColor': tongue.get('coatingColor') or [],
         },
         'faceAnalysis': {
             'summary': face.get('summary') or '',
@@ -82,7 +84,7 @@ def build_report_payload(result: dict[str, Any]) -> dict[str, Any]:
             'shape': face.get('shape') or [],
             'yinTang': face.get('yinTang') or [],
             'lipColor': face.get('lipColor') or [],
-            'eyeState': face.get('eyeState') or []
+            'eyeState': face.get('eyeState') or [],
         },
         'healthAnalysis': {
             'subjectName': analysis.get('subjectName') or '',
@@ -94,18 +96,35 @@ def build_report_payload(result: dict[str, Any]) -> dict[str, Any]:
             'exerciseReject': analysis.get('exerciseReject') or '',
             'physicalPosition': analysis.get('physicalPosition') or '',
             'physicalSearch': analysis.get('physicalSearch') or '',
-            'physicalOperation': analysis.get('physicalOperation') or ''
+            'physicalOperation': analysis.get('physicalOperation') or '',
         },
         'basicInfo': {
             'sex': assessment.get('sex') or '',
-            'age': assessment.get('age') or ''
+            'age': assessment.get('age') or '',
         },
-        'rawResult': result
+        'rawResult': result,
     }
 
 
+def field_text(form: cgi.FieldStorage, key: str) -> str:
+    if key not in form:
+        return ''
+
+    value = form[key]
+    if isinstance(value, list):
+        value = value[0]
+    return str(getattr(value, 'value', '') or '').strip()
+
+
+def safe_summary(value: str, limit: int = 20) -> str:
+    content = str(value or '').strip().replace('\n', ' ')
+    if len(content) <= limit:
+        return content
+    return f"{content[:max(limit - 3, 1)]}..."
+
+
 class TongueUploadHandler(BaseHTTPRequestHandler):
-    server_version = 'TongueUploadProxy/1.0'
+    server_version = 'TongueUploadProxy/2.0'
 
     def write_json(self, data: Any, status: int = 200) -> None:
         encoded = json_bytes(data)
@@ -122,7 +141,11 @@ class TongueUploadHandler(BaseHTTPRequestHandler):
         self.write_json({})
 
     def do_GET(self) -> None:
-        if self.path == '/health':
+        parsed_url = parse.urlparse(self.path)
+        path = parsed_url.path
+        query = parse.parse_qs(parsed_url.query)
+
+        if path == '/health':
             self.write_json({
                 'status': 'ok',
                 'exampleVideo': '/examples/tongue-video',
@@ -132,7 +155,7 @@ class TongueUploadHandler(BaseHTTPRequestHandler):
             })
             return
 
-        if self.path == '/examples/tongue-video':
+        if path == '/examples/tongue-video':
             video_path = resolve_video_path()
             file_size = video_path.stat().st_size
             self.send_response(200)
@@ -146,6 +169,20 @@ class TongueUploadHandler(BaseHTTPRequestHandler):
                     if not chunk:
                         break
                     self.wfile.write(chunk)
+            return
+
+        if path == '/api/tongue-analysis/result':
+            analysis_id = str((query.get('analysisId') or [''])[0]).strip()
+            if not analysis_id:
+                self.write_json({'error': 'analysisId 不能为空'}, status=400)
+                return
+
+            record = get_tongue_report(analysis_id)
+            if not record:
+                self.write_json({'error': '未找到舌诊报告'}, status=404)
+                return
+
+            self.write_json(record)
             return
 
         self.write_json({'error': 'Not Found'}, status=404)
@@ -165,8 +202,8 @@ class TongueUploadHandler(BaseHTTPRequestHandler):
             headers=self.headers,
             environ={
                 'REQUEST_METHOD': 'POST',
-                'CONTENT_TYPE': content_type
-            }
+                'CONTENT_TYPE': content_type,
+            },
         )
 
         video_item = form['video'] if 'video' in form else None
@@ -174,6 +211,8 @@ class TongueUploadHandler(BaseHTTPRequestHandler):
             self.write_json({'error': '请上传视频文件'}, status=400)
             return
 
+        openid = field_text(form, 'openid') or None
+        user_id = field_text(form, 'userId') or field_text(form, 'user_id') or None
         video_path = save_upload_file(video_item, '.mp4')
 
         try:
@@ -194,19 +233,45 @@ class TongueUploadHandler(BaseHTTPRequestHandler):
                     {
                         'error': map_error_message(error_code, result.get('errorMsg') or ''),
                         'errorCode': error_code,
-                        'tips': response.get('tips')
+                        'tips': response.get('tips'),
                     },
-                    status=502
+                    status=502,
                 )
                 return
 
             report = build_report_payload(result)
             report['analysisId'] = report.get('analysisId') or response.get('analysisId')
+
+            analysis_id = str(report.get('analysisId') or '').strip()
+            if analysis_id:
+                save_tongue_report(
+                    analysis_id=analysis_id,
+                    user_id=user_id,
+                    openid=openid,
+                    report=report,
+                    tips=response.get('tips'),
+                )
+
+            notify_result = None
+            if openid and analysis_id:
+                notify_result = send_subscribe_message(
+                    openid=openid,
+                    scene='tongue_result',
+                    biz_id=analysis_id,
+                    context={
+                        'analysis_id': analysis_id,
+                        'subject': safe_summary(report.get('overall', {}).get('subject') or '舌诊报告'),
+                        'summary': safe_summary(report.get('overall', {}).get('summary') or '舌诊结果已生成'),
+                        'event_time': '点击查看详情',
+                    },
+                )
+
             self.write_json(
                 {
                     'success': True,
                     'tips': response.get('tips'),
-                    'report': report
+                    'report': report,
+                    'notifyResult': notify_result,
                 }
             )
         except Exception as exc:

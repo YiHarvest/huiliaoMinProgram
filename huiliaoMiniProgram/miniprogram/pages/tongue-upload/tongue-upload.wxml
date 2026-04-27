@@ -1,4 +1,4 @@
-﻿<view class="page">
+<view class="page">
   <scroll-view class="page-scroll" scroll-y enable-flex="true" scroll-into-view="{{reportScrollId}}">
     <view class="content">
       <view class="section-card media-card">
@@ -19,12 +19,6 @@
               <view class="video-play">▶</view>
               <text class="upload-badge">已上传</text>
             </view>
-          </view>
-
-          <view class="example-panel example-panel-video">
-            <image class="example-image" src="{{exampleAssets.tongueVideo}}" mode="aspectFill"></image>
-            <view class="example-label">参考视频</view>
-            <view class="example-video-btn" bindtap="onPreviewExampleVideo">查看</view>
           </view>
         </view>
 
@@ -80,6 +74,7 @@
           <text class="media-action" bindtap="onRechooseImage" data-field="topImage">重新上传</text>
           <text class="media-action media-action-danger" bindtap="onRemoveMedia" data-field="topImage">删除</text>
         </view>
+        <text class="media-hint">请在自然光照下拍摄舌头上表面，确保舌苔清晰可见。</text>
       </view>
 
       <view class="section-card media-card">
@@ -109,6 +104,7 @@
           <text class="media-action" bindtap="onRechooseImage" data-field="bottomImage">重新上传</text>
           <text class="media-action media-action-danger" bindtap="onRemoveMedia" data-field="bottomImage">删除</text>
         </view>
+        <text class="media-hint">请在自然光照下拍摄舌头下表面，确保舌苔清晰可见。</text>
       </view>
 
       <view class="section-card media-card">
@@ -138,6 +134,7 @@
           <text class="media-action" bindtap="onRechooseImage" data-field="faceImage">重新上传</text>
           <text class="media-action media-action-danger" bindtap="onRemoveMedia" data-field="faceImage">删除</text>
         </view>
+        <text class="media-hint">请在自然光照下拍摄，无美颜、化妆，避免识别误差，保持表情自然。</text>
       </view>
 
       <view class="section-card requirement-card">

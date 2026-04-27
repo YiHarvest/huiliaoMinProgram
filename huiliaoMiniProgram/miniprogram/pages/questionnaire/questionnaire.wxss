@@ -1,0 +1,252 @@
+.page {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.page-scroll {
+  height: 100vh;
+}
+
+.content {
+  padding: 20rpx;
+}
+
+.section-card {
+  background-color: white;
+  border-radius: 16rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
+  padding: 32rpx;
+}
+
+.card-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 24rpx;
+}
+
+.loading-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 100rpx 0;
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: #999;
+}
+
+.success-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80rpx 0;
+}
+
+.success-badge {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  background-color: #52c41a;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 32rpx;
+}
+
+.success-badge-icon {
+  font-size: 60rpx;
+  color: white;
+  font-weight: bold;
+}
+
+.success-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 16rpx;
+}
+
+.success-desc {
+  font-size: 24rpx;
+  color: #666;
+  text-align: center;
+  margin-bottom: 48rpx;
+  line-height: 1.5;
+}
+
+.refill-btn {
+  width: 100%;
+  height: 88rpx;
+  background-color: #1890ff;
+  color: white;
+  border-radius: 44rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+.progress-section {
+  margin-bottom: 40rpx;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.total-count {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.answered-count {
+  font-size: 24rpx;
+  color: #1890ff;
+  font-weight: 500;
+}
+
+.progress-bar {
+  height: 8rpx;
+  background-color: #f0f0f0;
+  border-radius: 4rpx;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: #1890ff;
+  border-radius: 4rpx;
+  transition: width 0.3s ease;
+}
+
+.questions-list {
+  margin-bottom: 40rpx;
+}
+
+.question-item {
+  margin-bottom: 40rpx;
+}
+
+.question-header {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 24rpx;
+}
+
+.question-number {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+  margin-right: 12rpx;
+}
+
+.question-title {
+  font-size: 28rpx;
+  color: #333;
+  flex: 1;
+  line-height: 1.5;
+}
+
+.required-mark {
+  font-size: 28rpx;
+  color: #ff4d4f;
+  margin-left: 8rpx;
+}
+
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.option-item {
+  display: flex;
+  align-items: center;
+  padding: 24rpx;
+  background-color: #f9f9f9;
+  border-radius: 12rpx;
+  border: 2rpx solid transparent;
+  transition: all 0.2s ease;
+}
+
+.option-item:hover {
+  background-color: #f0f0f0;
+}
+
+.option-item--selected {
+  background-color: #e6f7ff;
+  border-color: #1890ff;
+}
+
+.option-indicator {
+  margin-right: 16rpx;
+}
+
+.option-radio {
+  transform: scale(1.2);
+}
+
+.option-text {
+  font-size: 26rpx;
+  color: #333;
+  flex: 1;
+}
+
+/* 文本题 - 复用 option-item 卡片样式，左侧对齐 radio 指示器 */
+.text-input-wrapper {
+  display: flex;
+  align-items: flex-start;
+  padding: 24rpx;
+  background-color: #f9f9f9;
+  border-radius: 12rpx;
+  border: 2rpx solid transparent;
+  transition: all 0.2s ease;
+}
+
+.text-input-wrapper:hover {
+  background-color: #f0f0f0;
+}
+
+.text-input-wrapper::before {
+  content: '';
+  display: inline-block;
+  width: 40rpx;   /* 模拟 radio 圆圈宽度 (32rpx * scale(1.2)) */
+  height: 1px;
+  margin-right: 16rpx;
+  flex-shrink: 0;
+}
+
+.text-input-inner {
+  flex: 1;
+  min-height: 80rpx;
+  background: transparent;
+  font-size: 26rpx;
+  color: #333;
+  line-height: 1.6;
+  padding: 0;
+  margin: 0;
+  border: none;
+  outline: none;
+  resize: none;
+}
+
+.text-input-placeholder {
+  font-size: 22rpx;
+  color: #bbbbbb;
+}
+
+.submit-section {
+  margin-top: 20rpx;
+}
+
+.submit-btn {
+  width: 100%;
+  height: 88rpx;
+  background-color: #1890ff;
+  color: white;
+  border-radius: 44rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+}

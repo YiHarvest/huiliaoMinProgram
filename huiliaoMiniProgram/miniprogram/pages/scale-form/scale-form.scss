@@ -264,15 +264,33 @@ scroll-view {
   min-width: 0;
 }
 
+.scale-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+  margin-bottom: 8rpx;
+}
+
 .scale-name {
+  flex: 1;
   font-size: 28rpx;
   line-height: 40rpx;
   font-weight: 700;
   color: #1f342f;
 }
 
-.scale-summary {
-  margin-top: 8rpx;
+.scale-status {
+  flex-shrink: 0;
+  padding: 4rpx 12rpx;
+  border-radius: 999rpx;
+  background: rgba(232, 250, 246, 0.95);
+  color: #0ba792;
+  font-size: 18rpx;
+  font-weight: 600;
+}
+
+.scale-department {
   font-size: 22rpx;
   line-height: 34rpx;
   color: #7d908a;

@@ -6,7 +6,7 @@
     </view>
 
     <view class="expert-list">
-      <view class="expert-card expert-card-{{item.theme}}" wx:for="{{experts}}" wx:key="id">
+      <view class="expert-card expert-card-{{item.theme}}" wx:for="{{experts}}" wx:key="id" data-id="{{item.id}}" bindtap="onExpertCardTap">
         <view class="expert-card-head">
           <view class="expert-avatar">
             <text class="expert-avatar-text">{{item.name}}</text>
@@ -22,7 +22,8 @@
         </view>
 
         <text class="expert-summary">{{item.summary}}</text>
-        <view class="expert-action" data-name="{{item.name}}" bindtap="onConsultExpert">{{item.serviceLabel}}</view>
+        <text class="expert-schedule" wx:if="{{item.schedule}}">出诊时间：{{item.schedule}}</text>
+        <view class="expert-action" data-id="{{item.id}}" bindtap="onConsultExpert">{{item.serviceLabel}}</view>
       </view>
     </view>
   </view>

@@ -1,0 +1,25 @@
+{
+  "life_emergence": {
+    "ak": "your_life_emergence_access_key",
+    "sk": "your_life_emergence_secret_key",
+    "base_url": "https://your-life-emergence-api-base-url"
+  },
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8010
+  },
+  "database": {
+    "type": "mysql",
+    "mysql": {
+      "host": "your_mysql_host",
+      "port": 3306,
+      "user": "your_mysql_user",
+      "password": "your_mysql_password",
+      "database": "your_mysql_database"
+    }
+  },
+  "fastgpt": {
+    "base_url": "https://your-fastgpt-api-base-url",
+    "api_key": "your_fastgpt_api_key"
+  }
+}

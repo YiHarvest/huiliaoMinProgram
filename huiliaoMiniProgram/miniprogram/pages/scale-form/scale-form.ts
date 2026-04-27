@@ -9,13 +9,16 @@ type DoctorOption = {
 
 type GenderOption = 'male' | 'female'
 
-type SymptomOption = '失眠' | '焦虑' | '抑郁' | '慢性疼痛' | '健康管理' | '其他'
+type CategoryOption = {
+  key: string
+  name: string
+}
 
 type ScaleItem = {
   id: string
-  name: string
-  summary: string
-  symptoms: SymptomOption[]
+  templateId: string
+  questionnaireName: string
+  description: string
 }
 
 const doctorOptions: DoctorOption[] = expertProfiles.slice(0, 4).map((expert) => ({
@@ -25,79 +28,138 @@ const doctorOptions: DoctorOption[] = expertProfiles.slice(0, 4).map((expert) =>
   tags: expert.focus.slice(0, 2)
 }))
 
-const symptomOptions: SymptomOption[] = ['失眠', '焦虑', '抑郁', '慢性疼痛', '健康管理', '其他']
-
-const scaleCatalog: ScaleItem[] = [
-  {
-    id: 'psqi',
-    name: 'PSQI 睡眠质量量表',
-    summary: '用于评估近期睡眠质量与睡眠结构。',
-    symptoms: ['失眠']
-  },
-  {
-    id: 'gad7',
-    name: 'GAD-7 焦虑量表',
-    summary: '用于评估焦虑相关症状程度。',
-    symptoms: ['焦虑']
-  },
-  {
-    id: 'phq9',
-    name: 'PHQ-9 抑郁量表',
-    summary: '用于评估抑郁情绪与相关表现。',
-    symptoms: ['抑郁']
-  },
-  {
-    id: 'pain',
-    name: '疼痛评估量表',
-    summary: '用于记录疼痛部位、程度与持续情况。',
-    symptoms: ['慢性疼痛']
-  },
-  {
-    id: 'health',
-    name: '健康管理基础量表',
-    summary: '用于建立当前健康状态基础档案。',
-    symptoms: ['健康管理', '其他']
-  }
-]
-
-function getRecommendedScales(symptom: SymptomOption | null) {
-  if (!symptom) {
-    return scaleCatalog
-  }
-
-  const prioritized = scaleCatalog.filter((item) => item.symptoms.includes(symptom))
-  const fallback = scaleCatalog.filter((item) => !item.symptoms.includes(symptom))
-  return [...prioritized, ...fallback]
-}
-
 function buildStatePatch(data: {
   selectedDoctor: DoctorOption | null
   selectedGender: GenderOption | null
-  selectedSymptom: SymptomOption | null
+  scaleList: ScaleItem[]
 }) {
-  const ready = Boolean(data.selectedDoctor && data.selectedGender && data.selectedSymptom)
-
   return {
-    canShowScales: ready,
-    visibleScales: ready ? getRecommendedScales(data.selectedSymptom) : []
+    canShowScales: true,
+    visibleScales: data.scaleList
   }
 }
 
 Component({
   data: {
     doctorOptions,
-    symptomOptions,
+    scaleList: [] as ScaleItem[],
     genderOptions: [
       { value: 'male', label: '男' },
       { value: 'female', label: '女' }
     ] as Array<{ value: GenderOption; label: string }>,
     selectedDoctor: null as DoctorOption | null,
     selectedGender: null as GenderOption | null,
-    selectedSymptom: null as SymptomOption | null,
     canShowScales: false,
-    visibleScales: [] as ScaleItem[]
+    visibleScales: [] as ScaleItem[],
+    isLoading: false
+  },
+  lifetimes: {
+    attached() {
+      this.loadScaleOptions()
+    }
   },
   methods: {
+    loadScaleOptions() {
+      this.setData({
+        isLoading: true
+      })
+
+      const openid = wx.getStorageSync('openid') || 'test_user_id'
+      wx.request({
+        url: 'https://miniprogram.huiliaoyiyuan.com/api/questionnaires/options',
+        method: 'GET',
+        data: { externalUserId: openid },
+        success: (res) => {
+          if (res.statusCode === 200) {
+            const responseData = res.data as any
+            
+            const categories = (responseData && responseData.categories) || []
+            const scales = (responseData && responseData.scales) || []
+
+            // 增加数据量限制，防止后端返回过多数据
+            const MAX_SCALES_THRESHOLD = 500
+            const MAX_RENDER_SCALES = 100
+            
+            // 如果数据量过大，直接显示错误提示
+            if (scales.length > MAX_SCALES_THRESHOLD) {
+              this.setData({
+                isLoading: false
+              })
+              wx.showToast({
+                title: '数据异常，请联系管理员',
+                icon: 'none'
+              })
+              return
+            }
+            
+            const limitedScales = scales.length > MAX_RENDER_SCALES 
+              ? scales.slice(0, MAX_RENDER_SCALES) 
+              : scales
+
+            const seenTemplateIds = new Set<string>()
+            const uniqueScales = limitedScales.filter((scale: any) => {
+              const templateId = String(scale.templateId || scale.id)
+              if (seenTemplateIds.has(templateId)) {
+                return false
+              }
+              seenTemplateIds.add(templateId)
+              return true
+            })
+
+            const scaleList = Array.isArray(uniqueScales) ? uniqueScales.map(item => ({
+              id: String(item.templateId || item.id || ''),
+              templateId: String(item.templateId || ''),
+              questionnaireName: item.questionnaireName || item.name || '',
+              description: item.description || ''
+            })) : []
+
+            // 排序：将包含"第一次填表"或"首次填写"的量表优先排到最前面
+            scaleList.sort((a, b) => {
+              const aHasKey = a.questionnaireName.includes('第一次填表') || a.questionnaireName.includes('首次填写')
+              const bHasKey = b.questionnaireName.includes('第一次填表') || b.questionnaireName.includes('首次填写')
+              if (aHasKey && !bHasKey) return -1
+              if (!aHasKey && bHasKey) return 1
+              return 0 // 保持原有相对顺序
+            })
+
+            const statePatch = buildStatePatch({
+              selectedDoctor: this.data.selectedDoctor,
+              selectedGender: this.data.selectedGender,
+              scaleList
+            })
+
+            const patchObject = {
+              categoryOptions: categories,
+              scaleList,
+              visibleScales: statePatch.visibleScales,
+              canShowScales: statePatch.canShowScales,
+              isLoading: false
+            }
+
+            this.setData(patchObject)
+
+            return
+          }
+
+          this.setData({
+            isLoading: false
+          })
+          wx.showToast({
+            title: '加载量表数据失败',
+            icon: 'none'
+          })
+        },
+        fail: () => {
+          this.setData({
+            isLoading: false
+          })
+          wx.showToast({
+            title: '网络错误，请稍后重试',
+            icon: 'none'
+          })
+        }
+      })
+    },
     onChooseDoctor() {
       wx.showActionSheet({
         itemList: this.data.doctorOptions.map((doctor) => `${doctor.name} · ${doctor.department}`),
@@ -109,7 +171,7 @@ Component({
             ...buildStatePatch({
               selectedDoctor,
               selectedGender: this.data.selectedGender,
-              selectedSymptom: this.data.selectedSymptom
+              scaleList: this.data.scaleList
             })
           })
         }
@@ -127,27 +189,11 @@ Component({
         ...buildStatePatch({
           selectedDoctor: this.data.selectedDoctor,
           selectedGender,
-          selectedSymptom: this.data.selectedSymptom
+          scaleList: this.data.scaleList
         })
       })
     },
-    onChooseSymptom() {
-      wx.showActionSheet({
-        itemList: this.data.symptomOptions,
-        success: (res) => {
-          const selectedSymptom = this.data.symptomOptions[res.tapIndex] || null
 
-          this.setData({
-            selectedSymptom,
-            ...buildStatePatch({
-              selectedDoctor: this.data.selectedDoctor,
-              selectedGender: this.data.selectedGender,
-              selectedSymptom
-            })
-          })
-        }
-      })
-    },
     validateBeforeStart() {
       if (!this.data.selectedDoctor) {
         return '请先确认医生信息'
@@ -157,13 +203,9 @@ Component({
         return '请选择性别'
       }
 
-      if (!this.data.selectedSymptom) {
-        return '请选择疾病症状'
-      }
-
       return ''
     },
-    onStartScale(event: WechatMiniprogram.CustomEvent) {
+    async onStartScale(event: WechatMiniprogram.CustomEvent) {
       const validationMessage = this.validateBeforeStart()
 
       if (validationMessage) {
@@ -174,12 +216,73 @@ Component({
         return
       }
 
-      const name = event.currentTarget.dataset.name as string
+      // 直接使用字符串形式的templateId（微信小程序会自动将kebab-case转换为camelCase）
+      const templateId = String(event.currentTarget.dataset.templateId || '')
+      const questionnaireName = event.currentTarget.dataset.name as string
+      
+      // 检查templateId是否有效
+      if (!templateId || templateId.trim() === '') {
+        wx.showToast({
+          title: '量表模板ID无效',
+          icon: 'none'
+        })
+        return
+      }
 
-      wx.showToast({
-        title: `${name}待接入`,
-        icon: 'none'
-      })
+      const openid = wx.getStorageSync('openid') || 'test_user_id'
+      const externalUserId = openid
+      const payload = { externalUserId, templateId }
+      
+      try {
+        // 使用Promise包装wx.request
+        const response = await new Promise<WechatMiniprogram.RequestSuccessCallbackResult>((resolve, reject) => {
+          wx.request({
+            url: 'https://miniprogram.huiliaoyiyuan.com/api/questionnaires/start',
+            method: 'POST',
+            data: payload,
+            success: resolve,
+            fail: reject
+          })
+        })
+
+        if (response.statusCode === 200 && response.data) {
+          // 添加类型断言，明确response.data的结构
+          const data = response.data as { recordId?: number }
+          const recordId = data.recordId
+          if (recordId) {
+            wx.showToast({
+              title: `开始填写${questionnaireName}`,
+              icon: 'success'
+            })
+            // 跳转到问卷填写页面
+            const url = `/pages/questionnaire/questionnaire?recordId=${recordId}`
+            wx.navigateTo({
+              url,
+              fail: (err) => {
+                wx.showToast({
+                  title: '页面跳转失败',
+                  icon: 'none'
+                })
+              }
+            })
+          } else {
+            wx.showToast({
+              title: '获取记录ID失败',
+              icon: 'none'
+            })
+          }
+        } else {
+          wx.showToast({
+            title: '开始填写失败',
+            icon: 'none'
+          })
+        }
+      } catch (error) {
+        wx.showToast({
+          title: '网络错误，请稍后重试',
+          icon: 'none'
+        })
+      }
     }
   }
 })

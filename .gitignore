@@ -1,15 +1,27 @@
-# 忽略端口测试信息
+# =========================
+# 本地说明/需求文档
+# =========================
 端口测试信息/
-
-# 忽略小程序前端需求
 小程序前端需求/
 
+# =========================
+# Git / IDE
+# =========================
+.idea/
+.vscode/
+.DS_Store
+
+# =========================
 # Python
+# =========================
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
+.venv/
+venv/
+env/
 build/
 develop-eggs/
 dist/
@@ -26,25 +38,64 @@ wheels/
 .installed.cfg
 *.egg
 
-# 上传的文件
+# =========================
+# 后端敏感配置
+# =========================
+huiliaoMiniPY/config.json
+huiliaoMiniPY/.env
+.env
+.env.*
+
+# 允许上传配置模板
+!huiliaoMiniPY/config.example.json
+
+# =========================
+# 后端上传文件/运行数据
+# =========================
 uploads/
 huiliaoMiniPY/uploads/
 
+huiliaoMiniPY/data/*.db
+huiliaoMiniPY/data/*.db-journal
+huiliaoMiniPY/data/*.sqlite
+huiliaoMiniPY/data/*.sqlite3
+
+# =========================
 # 日志文件
+# =========================
 logs/
 *.log
+huiliaoMiniPY/logs/
 
-# IDE
-.idea/
-.vscode/
-
-# 临时文件
-*.tmp
+# =========================
+# 本地备份
+# =========================
+backup/
+backup_*.zip
+backup_before_*.zip
+backup-before-*.zip
 *.bak
+
+# =========================
+# 临时文件
+# =========================
+*.tmp
 *.swp
 *~
-.DS_Store
 
-# 小程序配置（可选）
-huiliaoMiniProgram/project.config.json
+# =========================
+# 前端依赖/构建产物
+# =========================
+node_modules/
+dist/
+unpackage/
+
+# =========================
+# 微信小程序本地配置
+# =========================
 huiliaoMiniProgram/project.private.config.json
+
+# 这个是否忽略看你的协作方式：
+# 如果 project.config.json 里有真实 appid 或本地路径，就忽略；
+# 如果你希望别人拉代码后能直接导入微信开发者工具，可以保留一个脱敏版本。
+huiliaoMiniProgram/project.config.json

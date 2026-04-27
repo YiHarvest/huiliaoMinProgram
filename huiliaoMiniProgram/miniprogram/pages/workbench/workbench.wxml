@@ -1,4 +1,4 @@
-﻿<scroll-view class="page-scroll" scroll-y enable-flex="true">
+<scroll-view class="page-scroll" scroll-y enable-flex="true">
   <view class="page">
     <view class="welcome-card">
       <view class="welcome-glow welcome-glow-a"></view>
@@ -41,7 +41,6 @@
       <view class="module-head">
         <view>
           <text class="module-title">AI 助手选择</text>
-          <text class="module-subtitle">先选谁为你提供当前服务</text>
         </view>
         <text class="module-link" bindtap="onMoreAssistants">更多助手</text>
       </view>
@@ -77,33 +76,10 @@
       </view>
     </view>
 
-    <view class="module intro-card">
-      <view class="module-head compact-head">
-        <text class="module-title">助手介绍</text>
-      </view>
-
-      <view class="intro-main">
-        <view class="intro-title-row">
-          <view>
-            <text class="intro-name">{{currentAssistant.name}}</text>
-            <text class="intro-role">{{currentAssistant.role}}</text>
-          </view>
-          <text class="intro-badge">{{currentAssistant.status}}</text>
-        </view>
-
-        <text class="intro-desc">{{currentAssistant.description}}</text>
-
-        <view class="intro-tag-row">
-          <text class="intro-tag" wx:for="{{currentAssistant.tags}}" wx:key="*this">{{item}}</text>
-        </view>
-      </view>
-    </view>
-
     <view class="module">
       <view class="module-head">
         <view>
           <text class="module-title">快捷服务</text>
-          <text class="module-subtitle">高频服务入口集中在这里</text>
         </view>
       </view>
 
@@ -117,7 +93,21 @@
           bindtap="onTapService"
         >
           <view class="service-icon">
-            <text class="service-icon-text">{{item.iconText}}</text>
+            <view class="service-icon-halo"></view>
+            <view class="service-icon-core">
+              <view wx:if="{{item.iconType === 'message'}}" class="icon-message">
+                <text class="icon-emoji">💬</text>
+              </view>
+              <view wx:elif="{{item.iconType === 'tongue'}}" class="icon-tongue">
+                <text class="icon-emoji">👅</text>
+              </view>
+              <view wx:elif="{{item.iconType === 'doctor'}}" class="icon-doctor">
+                <text class="icon-emoji">👨‍⚕️</text>
+              </view>
+              <view wx:elif="{{item.iconType === 'bell'}}" class="icon-bell">
+                <text class="icon-emoji">🔔</text>
+              </view>
+            </view>
           </view>
           <text class="service-title">{{item.title}}</text>
           <text class="service-desc">{{item.desc}}</text>
@@ -129,32 +119,39 @@
       <view class="module-head">
         <view>
           <text class="module-title">智能问答</text>
-          <text class="module-subtitle">围绕当前助手快速发起问题，发送后进入对应助手的专属对话</text>
         </view>
       </view>
 
+      <view class="qa-toolbar">
+        <text class="module-subtitle">4 条推荐 · {{currentAssistant.name}} AI 助手在线</text>
+        <text class="module-link" bindtap="onShuffleQuestions">换一换</text>
+      </view>
+
       <view class="question-chip-row">
-        <text
+        <view
           class="question-chip"
           wx:for="{{questionSuggestions}}"
-          wx:key="*this"
-          data-question="{{item}}"
+          wx:key="id"
+          data-question="{{item.text}}"
           bindtap="onSelectQuestion"
         >
-          {{item}}
-        </text>
+          <text class="question-chip-icon">{{item.icon}}</text>
+          <text class="question-chip-text">{{item.text}}</text>
+        </view>
       </view>
 
       <view class="qa-input-shell">
         <textarea
-          class="qa-input"
+          class="qa-input {{qaDraft ? 'qa-input-active' : 'qa-input-empty'}}"
           maxlength="200"
-          auto-height="true"
+          placeholder-style="color: #9aaea9; text-align: center; line-height: 44rpx;"
           placeholder="请输入你想咨询的问题"
           value="{{qaDraft}}"
           bindinput="onQaInput"
         ></textarea>
-        <view class="qa-send-btn" bindtap="onSendQa">发送</view>
+        <view class="qa-send-btn" bindtap="onSendQa">
+          <text class="qa-send-btn-icon">➤</text>
+        </view>
       </view>
     </view>
 
@@ -162,7 +159,6 @@
       <view class="module-head">
         <view>
           <text class="module-title">最近服务</text>
-          <text class="module-subtitle">查看最近一次评估、舌诊、预约或随访状态</text>
         </view>
       </view>
 
@@ -186,19 +182,12 @@
       </view>
     </view>
 
-    <view class="module reminder-card">
-      <view class="module-head compact-head">
-        <text class="module-title">服务提醒</text>
-      </view>
-      <text class="reminder-desc">订阅评估结果、舌诊完成、随访问卷与就诊提醒，后续将接入微信通知能力。</text>
-      <view class="reminder-btn" bindtap="onSubscribeReminder">订阅提醒</view>
-    </view>
+
 
     <view class="module expert-module">
       <view class="module-head">
         <view>
           <text class="module-title">合作专家</text>
-          <text class="module-subtitle">了解更多专家与服务方向</text>
         </view>
         <text class="module-link" bindtap="onOpenExperts">更多</text>
       </view>

@@ -232,6 +232,79 @@ scroll-view {
   font-weight: 600;
 }
 
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.settings-item {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  padding: 22rpx 20rpx;
+  border-radius: 24rpx;
+  background:
+    linear-gradient(180deg, #ffffff 0%, #fbfefd 100%);
+  border: 1rpx solid rgba(218, 239, 233, 0.85);
+  box-shadow: 0 8rpx 20rpx rgba(15, 94, 81, 0.04);
+  transition: all 0.2s ease;
+}
+
+.settings-item-hover {
+  background: #ffffff;
+  border-color: rgba(0, 168, 143, 0.3);
+  box-shadow: 0 10rpx 24rpx rgba(15, 94, 81, 0.08);
+  transform: translateY(-2rpx);
+}
+
+.settings-icon {
+  flex: 0 0 74rpx;
+  width: 74rpx;
+  height: 74rpx;
+  border-radius: 22rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #fff9e6 0%, #fffef3 100%);
+  box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.7);
+}
+
+.settings-icon-text {
+  font-size: 28rpx;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.settings-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-label {
+  font-size: 28rpx;
+  line-height: 40rpx;
+  font-weight: 600;
+  color: #2d3c39;
+}
+
+.settings-value {
+  margin-top: 6rpx;
+  font-size: 20rpx;
+  line-height: 30rpx;
+  color: #8b9b97;
+}
+
+.settings-arrow {
+  flex-shrink: 0;
+}
+
+.arrow-text {
+  font-size: 32rpx;
+  line-height: 1;
+  color: #ccc;
+}
+
 .contact-list {
   display: flex;
   flex-direction: column;

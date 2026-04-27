@@ -1,0 +1,500 @@
+{
+  "categories": [
+    {
+      "key": "all",
+      "name": "全部"
+    },
+    {
+      "key": "1",
+      "name": "0"
+    },
+    {
+      "key": "1",
+      "name": "1"
+    },
+    {
+      "key": "1",
+      "name": "2"
+    },
+    {
+      "key": "2",
+      "name": "2"
+    },
+    {
+      "key": "1",
+      "name": "神经内科"
+    }
+  ],
+  "scales": [
+    {
+      "templateId": "2044969684322750465",
+      "questionnaireName": "不育症诊断量表（第一次填表请选择这个表）",
+      "category": "1",
+      "applyDepartment": "1",
+      "groupType": 1,
+      "recordId": "1776841324376806252",
+      "status": "1",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2042879199571611650",
+      "questionnaireName": "国际前列腺症状评分表I-PSS（第一次填表请选择这个表）",
+      "category": "1",
+      "applyDepartment": "1",
+      "groupType": 1,
+      "recordId": "1776848120630333226",
+      "status": "0",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2044968508025999362",
+      "questionnaireName": "早泄诊断量表（PEDT）（第一次填表请选择这个表）",
+      "category": "1",
+      "applyDepartment": "1",
+      "groupType": 1,
+      "recordId": "1776848126547613622",
+      "status": "0",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2034101895408128001",
+      "questionnaireName": "男性其他症状病史表（第一次填表请选择这个表）",
+      "category": "1",
+      "applyDepartment": "1",
+      "groupType": 1,
+      "recordId": "1776848139372869021",
+      "status": "0",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2044965016179838978",
+      "questionnaireName": "男性性欲自评量表（第一次填表请选择这个）",
+      "category": "1",
+      "applyDepartment": "1",
+      "groupType": 1,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2044353216149196801",
+      "questionnaireName": "PCOS不孕症线上初筛信息表",
+      "category": "1",
+      "applyDepartment": "2",
+      "groupType": 2,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2043922259252350978",
+      "questionnaireName": "不孕病史表",
+      "category": "1",
+      "applyDepartment": "2",
+      "groupType": 2,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2044292015251787777",
+      "questionnaireName": "不孕症信息量表",
+      "category": "1",
+      "applyDepartment": "2",
+      "groupType": 2,
+      "recordId": "1776848144822939312",
+      "status": "0",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2041451404487864322",
+      "questionnaireName": "不孕选择性治疗量表",
+      "category": "1",
+      "applyDepartment": "2",
+      "groupType": 2,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2034907541133070337",
+      "questionnaireName": "不育症诊断量表",
+      "category": "1",
+      "applyDepartment": "1",
+      "groupType": 1,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2043638078815342594",
+      "questionnaireName": "中医四诊自我考量表",
+      "category": "1",
+      "applyDepartment": "2",
+      "groupType": 2,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2014520536600776706",
+      "questionnaireName": "中医妇科健康状态问诊表",
+      "category": "1",
+      "applyDepartment": "2",
+      "groupType": 2,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2046529680844001282",
+      "questionnaireName": "中医妇科复诊表",
+      "category": "1",
+      "applyDepartment": "2",
+      "groupType": 2,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2041429236597174273",
+      "questionnaireName": "中医问诊表",
+      "category": "1",
+      "applyDepartment": "0",
+      "groupType": 1,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2046526779195133954",
+      "questionnaireName": "初次预问诊表",
+      "category": "1",
+      "applyDepartment": "2",
+      "groupType": 0,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2043615527254888449",
+      "questionnaireName": "初诊既往史病历",
+      "category": "1",
+      "applyDepartment": "2",
+      "groupType": 0,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2014539678649257986",
+      "questionnaireName": "前列腺炎病史采集表",
+      "category": "1",
+      "applyDepartment": "1",
+      "groupType": 1,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2014543887125811202",
+      "questionnaireName": "勃起功能障碍（ED）病史采集表",
+      "category": "1",
+      "applyDepartment": "1",
+      "groupType": 1,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2015983768213491714",
+      "questionnaireName": "勃起硬度评估（EHS）   ",
+      "category": "1",
+      "applyDepartment": "1",
+      "groupType": 1,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2038873089436594177",
+      "questionnaireName": "围绝经期评定量表（MRS）",
+      "category": "1",
+      "applyDepartment": "2",
+      "groupType": 2,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2042878102123581441",
+      "questionnaireName": "国际前列腺症状评分表I-PSS",
+      "category": "1",
+      "applyDepartment": "1",
+      "groupType": 1,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2028417586051420161",
+      "questionnaireName": "国际勃起功能指数-5（IIEF-5）",
+      "category": "1",
+      "applyDepartment": "1",
+      "groupType": 1,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2013810071253364738",
+      "questionnaireName": "国际勃起功能评分5项(IIEF-5)",
+      "category": "1",
+      "applyDepartment": "1",
+      "groupType": 1,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2015982885757095938",
+      "questionnaireName": "国际勃起功能问卷-5（IIEF-5）和勃起硬度评分（EHS）  ",
+      "category": "1",
+      "applyDepartment": "1",
+      "groupType": 1,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2012775335111716865",
+      "questionnaireName": "失眠程度自评量表",
+      "category": "1",
+      "applyDepartment": "神经内科",
+      "groupType": 1,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2038858870901223425",
+      "questionnaireName": "女方焦虑自评量表",
+      "category": "1",
+      "applyDepartment": "2",
+      "groupType": 2,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2043926976070160386",
+      "questionnaireName": "女方肠道微生态评估表",
+      "category": "1",
+      "applyDepartment": "2",
+      "groupType": 2,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2041383368288415745",
+      "questionnaireName": "妇科不孕病史表",
+      "category": "1",
+      "applyDepartment": "2",
+      "groupType": 2,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2038922044228808705",
+      "questionnaireName": "妇科其他病史表",
+      "category": "1",
+      "applyDepartment": "2",
+      "groupType": 2,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2038907985894879233",
+      "questionnaireName": "妇科炎测试表",
+      "category": "1",
+      "applyDepartment": "2",
+      "groupType": 2,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2028297115268026370",
+      "questionnaireName": "心理健康",
+      "category": "1",
+      "applyDepartment": "1",
+      "groupType": 1,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2028299229125939202",
+      "questionnaireName": "心理健康",
+      "category": "1",
+      "applyDepartment": "0",
+      "groupType": 1,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2028279882546417665",
+      "questionnaireName": "慢性前列炎评分",
+      "category": "1",
+      "applyDepartment": "1",
+      "groupType": 1,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2028295129407688705",
+      "questionnaireName": "慢性前列炎评分",
+      "category": "1",
+      "applyDepartment": "0",
+      "groupType": 1,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2015957063910395905",
+      "questionnaireName": "慢性前列腺炎症状评分（NIH-CPSI）",
+      "category": "1",
+      "applyDepartment": "1",
+      "groupType": 1,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2028661359193985026",
+      "questionnaireName": "抑郁症状评定表(汉密尔顿抑郁量表HAMD)",
+      "category": "1",
+      "applyDepartment": "0",
+      "groupType": 1,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2028410640846032897",
+      "questionnaireName": "早泄诊断量表（PEDT）",
+      "category": "1",
+      "applyDepartment": "1",
+      "groupType": 1,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2041723298415947777",
+      "questionnaireName": "月经不调病史表",
+      "category": "1",
+      "applyDepartment": "2",
+      "groupType": 2,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2038895993939341314",
+      "questionnaireName": "月经症状量表（MDQ）",
+      "category": "2",
+      "applyDepartment": "2",
+      "groupType": 2,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2028643255634202626",
+      "questionnaireName": "焦虑症诊断用表（汉密尔顿焦虑量表 HAMA）",
+      "category": "1",
+      "applyDepartment": "1",
+      "groupType": 1,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2027682445175820289",
+      "questionnaireName": "焦虑症诊断用表（汉密尔顿焦虑量表HAMA）",
+      "category": "1",
+      "applyDepartment": "0",
+      "groupType": 0,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2038864259155800066",
+      "questionnaireName": "爱丁堡产后抑郁量表",
+      "category": "1",
+      "applyDepartment": "2",
+      "groupType": 2,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2014255987972739073",
+      "questionnaireName": "男性不育病史采集表",
+      "category": "1",
+      "applyDepartment": "1",
+      "groupType": 1,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2015970188776804354",
+      "questionnaireName": "男性健康中医体质与证型自测问卷",
+      "category": "1",
+      "applyDepartment": "1",
+      "groupType": 1,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2034914475135471617",
+      "questionnaireName": "男性性功能障碍病史表",
+      "category": "1",
+      "applyDepartment": "1",
+      "groupType": 1,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2028412849721708546",
+      "questionnaireName": "男性性欲自评量表",
+      "category": "1",
+      "applyDepartment": "1",
+      "groupType": 1,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    },
+    {
+      "templateId": "2028409238522433537",
+      "questionnaireName": "美国国立卫生研究院慢性前列腺炎症状指数 （NIH-CPSI）",
+      "category": "1",
+      "applyDepartment": "1",
+      "groupType": 1,
+      "recordId": null,
+      "status": "unfinished",
+      "statusText": "未填写"
+    }
+  ]
+}

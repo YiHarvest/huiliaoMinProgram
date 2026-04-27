@@ -1,4 +1,4 @@
-﻿<view class="page">
+<view class="page">
   <scroll-view class="page-scroll" scroll-y scroll-with-animation="true" scroll-into-view="{{scrollIntoView}}">
     <view class="content">
       <view class="identity-card">
@@ -8,7 +8,7 @@
         <view class="identity-main">
           <text class="identity-title">{{currentAssistant.introTitle}}</text>
           <text class="identity-subtitle">{{currentAssistant.introSubtitle}}</text>
-          <text class="identity-desc">{{currentAssistant.introDescription}}</text>
+          <text class="identity-desc" user-select>{{currentAssistant.introDescription}}</text>
 
           <view class="identity-tag-row">
             <text class="identity-tag" wx:for="{{profileTags}}" wx:key="*this">{{item}}</text>
@@ -35,12 +35,20 @@
             data-question="{{item.text}}"
             bindtap="onTapCommonQuestion"
           >
-            <text class="question-card-text">{{item.text}}</text>
+            <text class="question-card-text" user-select>{{item.text}}</text>
           </view>
         </view>
       </view>
 
-      <view class="module message-module">
+      <view class="message-section">
+        <view class="message-section-head">
+          <view class="message-section-divider"></view>
+          <view class="message-section-pill">
+            <view class="message-section-dot"></view>
+            <text class="message-section-status">{{currentAssistant.name}} 正在为你服务</text>
+          </view>
+          <view class="message-section-divider"></view>
+        </view>
         <view class="message-list">
           <view
             id="{{item.id}}"
@@ -48,11 +56,19 @@
             wx:for="{{messages}}"
             wx:key="id"
           >
-            <view class="message-avatar" wx:if="{{item.role === 'assistant'}}">{{currentAssistant.avatarText}}</view>
+            <image class="message-avatar" src="{{currentAssistant.avatar}}" mode="aspectFill" wx:if="{{item.role === 'assistant'}}"></image>
             <view class="message-body">
               <text class="message-label">{{item.label}}</text>
               <view class="message-bubble message-bubble-{{item.role}}">
-                <text class="message-text">{{item.content}}</text>
+                <text class="message-text" user-select wx:if="{{item.content !== '正在思考中...'}}">{{item.content}}</text>
+                <view class="loading-container" wx:else>
+                  <text class="loading-text">正在思考中</text>
+                  <view class="loading-dots">
+                    <text class="loading-dot">.</text>
+                    <text class="loading-dot">.</text>
+                    <text class="loading-dot">.</text>
+                  </view>
+                </view>
               </view>
             </view>
           </view>
@@ -76,13 +92,13 @@
         bindconfirm="onSendMessage"
         confirm-type="send"
       />
-      <button
+      <view
         class="send-btn {{(!canSend || isSending) ? 'send-btn-disabled' : ''}}"
-        disabled="{{!canSend || isSending}}"
         bindtap="onSendMessage"
       >
         {{isSending ? '发送中' : '发送'}}
-      </button>
+      </view>
     </view>
+
   </view>
 </view>

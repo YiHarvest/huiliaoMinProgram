@@ -111,6 +111,20 @@ python chat_proxy_server.py
 }
 ```
 
+### 前端地址配置
+
+#### 智能问答模块地址
+- **文件位置**：`huiliaoMiniProgram/miniprogram/utils/util.ts`
+- **配置项**：`CHAT_PROXY_BASE_URL`
+- **当前值**：`http://127.0.0.1:8010`
+- **发布时修改**：改为正式域名，如 `https://miniprogram.ronghuiai.com`
+
+#### 舌诊上传模块地址
+- **文件位置**：`huiliaoMiniProgram/miniprogram/pages/tongue-upload/tongue-upload.ts`
+- **配置项**：`TONGUE_API_BASE_URL`
+- **当前值**：`http://127.0.0.1:8020`
+- **发布时修改**：改为正式域名，如 `https://miniprogram.ronghuiai.com`
+
 ## 页面展示
 
 ### 首页
@@ -167,7 +181,7 @@ python chat_proxy_server.py
 
 - 公司名称：榕慧科技(杭州)有限公司
 - 项目地址：https://github.com/YiHarvest/huiliaoMinProgram
-- 贡献者：易秋月、姚乐、刘佳慧、闫金茂
+- 贡献者：易秋月
 
 ## 许可证
 
