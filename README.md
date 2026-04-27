@@ -181,7 +181,7 @@ python chat_proxy_server.py
 
 - 公司名称：榕慧科技(杭州)有限公司
 - 项目地址：https://github.com/YiHarvest/huiliaoMinProgram
-- 贡献者：易秋月
+- 贡献者：易秋月、姚乐、刘佳慧、闫金茂
 
 ## 许可证
 
