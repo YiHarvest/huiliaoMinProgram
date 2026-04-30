@@ -1,141 +1,92 @@
-const QR_CODE_SRC = '/assets/contact-qrcode.png'
-
-const companyInfo = {
-  name: '榕慧科技（杭州）有限公司',
-  phone: '057185808606',
-  email: '107314666@qq.com',
-  address: '杭州市滨江区滨康路 308 号 IWK 聚才大厦 2 幢 24 层 2406',
-  latitude: 30.2089,
-  longitude: 120.2089
-}
-
-const contactCards = [
-  {
-    key: 'address',
-    theme: 'address',
-    icon: '📍',
-    label: '公司地址',
-    value: companyInfo.address,
-    hint: '',
-    action: 'address',
-    actionText: '导航',
-    toastLabel: '地址'
-  },
-  {
-    key: 'phone',
-    theme: 'phone',
-    icon: '📞',
-    label: '联系电话',
-    value: companyInfo.phone,
-    hint: '',
-    action: 'call',
-    actionText: '拨打',
-    toastLabel: '电话'
-  },
-  {
-    key: 'email',
-    theme: 'email',
-    icon: '📧',
-    label: '电子邮箱',
-    value: companyInfo.email,
-    hint: '',
-    action: 'copy',
-    actionText: '复制',
-    toastLabel: '邮箱'
-  }
-]
-
 Component({
   data: {
-    companyInfo,
-    contactCards,
-    qrcodeSrc: QR_CODE_SRC,
-    serviceTags: ['产品咨询', '合作沟通', '专家网络', '公众号']
+    profile: {
+      userId: 'test_user_id',
+      avatarUrl: '',
+      nickname: '',
+      gender: '',
+      birthday: '',
+      age: 0
+    }
   },
+
+  onShow() {
+    this.loadProfile()
+  },
+
   methods: {
-    onContactAction(event: WechatMiniprogram.CustomEvent) {
-      const { action, value, label } = event.currentTarget.dataset as {
-        action: 'copy' | 'call' | 'address'
-        value: string
-        label: string
+    loadProfile() {
+      let stored: any = wx.getStorageSync('USER_PROFILE')
+
+      if (typeof stored === 'string') {
+        try {
+          stored = JSON.parse(stored)
+        } catch (err) {
+          stored = {}
+        }
       }
 
-      if (action === 'call') {
-        wx.makePhoneCall({
-          phoneNumber: value
-        })
-        return
+      const profile = {
+        userId: 'test_user_id',
+        avatarUrl: '',
+        nickname: '',
+        gender: 'unknown',
+        birthday: '',
+        age: 0,
+        ...stored
       }
 
-      if (action === 'address') {
-        wx.showActionSheet({
-          itemList: ['复制地址', '打开地图导航'],
-          success: (res) => {
-            if (res.tapIndex === 0) {
-              wx.setClipboardData({
-                data: value,
-                success: () => {
-                  wx.showToast({
-                    title: '地址已复制到剪贴板',
-                    icon: 'success'
-                  })
-                }
-              })
-            } else if (res.tapIndex === 1) {
-              wx.openLocation({
-                latitude: companyInfo.latitude,
-                longitude: companyInfo.longitude,
-                name: companyInfo.name,
-                address: companyInfo.address,
-                scale: 18
-              })
-            }
-          }
-        })
-        return
-      }
+      console.log('mine 页面读取 USER_PROFILE:', profile)
 
-      wx.setClipboardData({
-        data: value,
+      this.setData({
+        profile
+      })
+    },
+
+    onEditProfile() {
+      console.log('点击了完善资料按钮')
+      wx.navigateTo({
+        url: '/pages/profile/edit',
         success: () => {
+          console.log('跳转完善资料页面成功')
+        },
+        fail: (err) => {
+          console.error('跳转完善资料页面失败', err)
           wx.showToast({
-            title: `${label}已复制到剪贴板`,
-            icon: 'success'
+            title: '页面跳转失败',
+            icon: 'none'
           })
         }
       })
     },
-    onPreviewQrCode() {
-      wx.previewImage({
-        current: this.data.qrcodeSrc,
-        urls: [this.data.qrcodeSrc]
+
+    onNavigateToPersonalData() {
+      wx.switchTab({
+        url: '/pages/personal-data/index'
       })
     },
-    onServiceTagTap(event: WechatMiniprogram.CustomEvent) {
-      const tag = event.currentTarget.dataset.tag as string
-      const scrollToMap: Record<string, string> = {
-        '产品咨询': 'phone',
-        '合作沟通': 'email',
-        '专家网络': 'phone',
-        '公众号': 'qrcode'
-      }
-      
-      const target = scrollToMap[tag]
-      if (target === 'qrcode') {
-        wx.pageScrollTo({
-          selector: '.follow-card',
-          duration: 300
-        })
-      } else {
-        wx.pageScrollTo({
-          selector: '.contact-card',
-          duration: 300
-        })
-      }
-    },
-    onMessageSettings() {
+
+    onContactUs() {
       wx.navigateTo({
-        url: '/pages/message-settings/message-settings'
+        url: '/pages/contact/contact'
+      })
+    },
+
+    onFAQ() {
+      wx.navigateTo({
+        url: '/pages/faq/faq'
+      })
+    },
+
+    onPrivacyPolicy() {
+      wx.navigateTo({
+        url: '/pages/privacy/privacy'
+      })
+    },
+
+    onUserAgreement() {
+      wx.navigateTo({
+        url: '/pages/agreement/agreement'
       })
     }
   }

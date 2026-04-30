@@ -1,0 +1,84 @@
+<scroll-view class="page-scroll" scroll-y enable-flex="true">
+  <view class="page">
+    <view class="section-card">
+      <view class="section-head">
+        <text class="section-title">用户协议</text>
+        <text class="section-note">服务条款</text>
+      </view>
+
+      <view class="agreement-content">
+        <view class="agreement-section">
+          <text class="agreement-title">银川慧疗互联网医院用户服务协议</text>
+          <text class="agreement-subtitle">欢迎使用银川慧疗互联网医院提供的舌诊分析服务。请仔细阅读以下协议条款。</text>
+        </view>
+
+        <view class="agreement-section">
+          <text class="agreement-title">一、服务概述</text>
+          <text class="agreement-text">1. 银川慧疗互联网医院（以下简称"我们"）提供基于AI技术的中医舌诊分析服务；</text>
+          <text class="agreement-text">2. 用户通过上传舌面视频，获得AI分析生成的健康报告；</text>
+          <text class="agreement-text">3. 本服务仅供参考，不能替代专业医疗诊断。</text>
+        </view>
+
+        <view class="agreement-section">
+          <text class="agreement-title">二、用户权利与义务</text>
+          <text class="agreement-text">1. 用户有权使用本服务，并获得相应的分析报告；</text>
+          <text class="agreement-text">2. 用户应提供真实、准确的信息；</text>
+          <text class="agreement-text">3. 用户应遵守本协议及相关法律法规；</text>
+          <text class="agreement-text">4. 用户不得利用本服务进行任何违法活动。</text>
+        </view>
+
+        <view class="agreement-section">
+          <text class="agreement-title">三、服务使用规范</text>
+          <text class="agreement-text">1. 用户应按照指引正确录制和上传视频；</text>
+          <text class="agreement-text">2. 用户不得上传违法、违规或侵犯他人权益的内容；</text>
+          <text class="agreement-text">3. 用户不得恶意攻击、破坏服务系统；</text>
+          <text class="agreement-text">4. 用户应妥善保管账户信息，防止泄露。</text>
+        </view>
+
+        <view class="agreement-section">
+          <text class="agreement-title">四、服务变更与终止</text>
+          <text class="agreement-text">1. 我们有权根据业务需要变更或调整服务内容；</text>
+          <text class="agreement-text">2. 如用户违反协议，我们有权暂停或终止服务；</text>
+          <text class="agreement-text">3. 用户可以随时停止使用服务。</text>
+        </view>
+
+        <view class="agreement-section">
+          <text class="agreement-title">五、免责声明</text>
+          <text class="agreement-text">1. 本服务提供的分析结果仅供参考，不能替代专业医生诊断；</text>
+          <text class="agreement-text">2. 我们不对因使用本服务产生的任何直接或间接损失负责；</text>
+          <text class="agreement-text">3. 如遇不可抗力导致服务中断，我们不承担责任。</text>
+        </view>
+
+        <view class="agreement-section">
+          <text class="agreement-title">六、知识产权</text>
+          <text class="agreement-text">1. 服务中的所有内容（包括但不限于文字、图像、算法）均受版权保护；</text>
+          <text class="agreement-text">2. 用户不得复制、传播或用于商业用途；</text>
+          <text class="agreement-text">3. 用户上传的视频版权归用户所有，但授予我们分析和存储的使用权。</text>
+        </view>
+
+        <view class="agreement-section">
+          <text class="agreement-title">七、协议的变更</text>
+          <text class="agreement-text">1. 我们有权更新协议内容；</text>
+          <text class="agreement-text">2. 更新后会在小程序内公告，用户继续使用即表示同意。</text>
+        </view>
+
+        <view class="agreement-section">
+          <text class="agreement-title">八、争议解决</text>
+          <text class="agreement-text">1. 协议的解释和执行适用中华人民共和国法律；</text>
+          <text class="agreement-text">2. 如有争议，双方应协商解决；协商不成的，可向有管辖权的法院提起诉讼。</text>
+        </view>
+
+        <view class="agreement-section">
+          <text class="agreement-title">九、其他</text>
+          <text class="agreement-text">1. 本协议构成双方的完整协议，取代之前的所有口头或书面协议；</text>
+          <text class="agreement-text">2. 如协议中的任何条款被认定为无效，不影响其他条款的效力。</text>
+        </view>
+
+        <view class="agreement-section">
+          <text class="agreement-title">十、生效日期</text>
+          <text class="agreement-text">本协议自用户首次使用服务之日起生效。</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</scroll-view>

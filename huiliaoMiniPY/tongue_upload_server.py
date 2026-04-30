@@ -282,8 +282,9 @@ class TongueUploadHandler(BaseHTTPRequestHandler):
 
 
 def run_server() -> None:
-    host = config['server']['host']
-    port = config['server']['port']
+    tongue_server_config = config.get('tongue_server', {})
+    host = tongue_server_config.get('host', config['server']['host'])
+    port = int(tongue_server_config.get('port', 8020))
     server = ThreadingHTTPServer((host, port), TongueUploadHandler)
     print(f'Tongue upload proxy running on http://{host}:{port}')
     server.serve_forever()

@@ -1,0 +1,261 @@
+<view class="ai-page">
+  <!-- 自定义导航栏 -->
+  <view class="nav-bar" style="padding-top: {{statusBarHeight}}px; height: {{statusBarHeight + navBarHeight}}px;">
+    <view class="nav-bar-left">
+      <view class="nav-btn nav-btn-menu" bindtap="openHistoryDrawer">
+        <view class="menu-icon">
+          <view class="menu-bar"></view>
+          <view class="menu-bar"></view>
+          <view class="menu-bar"></view>
+        </view>
+      </view>
+    </view>
+    <view class="nav-bar-title">智能助手</view>
+    <view class="nav-bar-right"></view>
+  </view>
+
+  <!-- 历史对话抽屉遮罩 -->
+  <view 
+    class="history-mask" 
+    wx:if="{{historyVisible}}" 
+    bindtap="closeHistoryDrawer"
+  ></view>
+  
+  <!-- 历史对话抽屉 -->
+  <view class="history-drawer" wx:if="{{historyVisible}}">
+    <view class="history-header">
+      <text class="history-title">历史对话</text>
+      <view class="history-new-btn" bindtap="createNewSession">
+        <text class="history-new-btn-text">新建对话</text>
+      </view>
+    </view>
+    
+    <scroll-view class="history-list" scroll-y>
+      <view class="history-empty" wx:if="{{chatSessions.length === 0}}">
+        <text class="history-empty-text">暂无历史对话</text>
+      </view>
+      
+      <view 
+        class="history-item" 
+        wx:for="{{chatSessions}}" 
+        wx:key="id"
+        data-session-id="{{item.id}}"
+        bindtap="switchSession"
+      >
+        <view class="history-item-content">
+          <text class="history-item-title">{{item.title}}</text>
+          <text class="history-item-preview">{{item.preview}}</text>
+          <text class="history-item-time">{{item.updatedAt}}</text>
+        </view>
+        <view 
+          class="history-item-delete" 
+          data-session-id="{{item.id}}"
+          bindtap="deleteSession"
+        >
+          <text class="delete-icon">×</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <scroll-view class="ai-scroll" scroll-y scroll-with-animation="true" scroll-into-view="{{scrollIntoView}}">
+    <view class="content">
+      <view class="identity-card">
+        <view class="identity-glow identity-glow-a"></view>
+        <view class="identity-glow identity-glow-b"></view>
+
+        <view class="identity-main">
+          <text class="identity-title">智能助手</text>
+          <text class="identity-subtitle">健康咨询 AI 助手</text>
+          <text class="identity-desc">可咨询妇科、男科、备孕、健康评估、报告解读等相关问题。</text>
+
+          <view class="identity-tag-row">
+            <text class="identity-tag">健康咨询</text>
+            <text class="identity-tag">备孕指导</text>
+            <text class="identity-tag">报告解读</text>
+          </view>
+        </view>
+
+        <view class="identity-portrait">
+          <view class="identity-portrait-ring"></view>
+          <image class="identity-portrait-image" src="/assets/xiaohui.jpg" mode="aspectFill"></image>
+        </view>
+      </view>
+
+      <view class="module">
+        <view class="module-head">
+          <view>
+            <text class="module-title">常问问题</text>
+            <text class="module-subtitle">点击问题可直接发起咨询</text>
+          </view>
+          <text class="module-link" bindtap="onShuffleQuestions">换一换</text>
+        </view>
+
+        <view class="question-grid">
+          <view
+            class="question-card"
+            wx:for="{{commonQuestions}}"
+            wx:key="id"
+            data-question="{{item.text}}"
+            bindtap="onTapCommonQuestion"
+          >
+            <text class="question-card-text">{{item.text}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="message-section">
+        <view class="message-section-head">
+          <view class="message-section-divider"></view>
+          <view class="message-section-pill">
+            <view class="message-section-dot"></view>
+            <text class="message-section-status">智能助手正在为你服务</text>
+          </view>
+          <view class="message-section-divider"></view>
+        </view>
+        <view class="message-list">
+          <view
+            id="{{item.id}}"
+            class="message-row message-row-{{item.role}}"
+            wx:for="{{messages}}"
+            wx:key="id"
+            wx:if="{{item.content || item.type === 'image' || item.type === 'file'}}"
+          >
+            <image class="message-avatar" src="/assets/xiaohui.jpg" mode="aspectFill" wx:if="{{item.role === 'assistant'}}"></image>
+            <view class="message-body">
+              <text class="message-label">{{item.label}}</text>
+              <view class="message-bubble message-bubble-{{item.role}}">
+                <!-- 加载状态（仅 AI 助手消息） -->
+                <view class="loading-container" wx:if="{{item.isLoading === true && item.role === 'assistant'}}">
+                  <text class="loading-text">正在思考中</text>
+                  <view class="loading-dots">
+                    <text class="loading-dot">.</text>
+                    <text class="loading-dot">.</text>
+                    <text class="loading-dot">.</text>
+                  </view>
+                </view>
+                
+                <!-- 文本消息 -->
+                <text class="message-text" user-select wx:if="{{item.isLoading !== true && item.content}}">{{item.content}}</text>
+                
+                <!-- 图片消息 -->
+                <image 
+                  class="message-image" 
+                  wx:if="{{item.type === 'image' && item.mediaUrl}}" 
+                  src="{{item.mediaUrl}}" 
+                  mode="widthFix"
+                ></image>
+                
+                <!-- 文件消息 -->
+                <view class="message-file" wx:if="{{item.type === 'file'}}">
+                  <text class="file-icon">📄</text>
+                  <view class="file-info">
+                    <text class="file-name">{{item.fileName}}</text>
+                    <text class="file-size" wx:if="{{item.fileSizeText}}">{{item.fileSizeText}}</text>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view id="bottom-anchor" class="bottom-anchor"></view>
+    </view>
+  </scroll-view>
+
+  <!-- 附件面板遮罩 -->
+  <view 
+    class="attachment-mask" 
+    wx:if="{{showAttachmentPanel}}" 
+    bindtap="closeAttachmentPanel"
+  ></view>
+  
+  <!-- 附件面板 -->
+  <view class="attachment-panel" wx:if="{{showAttachmentPanel}}">
+    <view class="attachment-grid">
+      <view class="attachment-item" bindtap="onTakePhoto">
+        <view class="attachment-icon-wrapper">
+          <image class="attachment-icon" src="/assets/icons/xiangce.png" mode="aspectFit"></image>
+        </view>
+        <text class="attachment-label">拍照</text>
+      </view>
+      <view class="attachment-item" bindtap="onChooseImage">
+        <view class="attachment-icon-wrapper">
+          <image class="attachment-icon" src="/assets/icons/camera.png" mode="aspectFit"></image>
+        </view>
+        <text class="attachment-label">相册</text>
+      </view>
+      <view class="attachment-item" bindtap="onChooseFile">
+        <view class="attachment-icon-wrapper">
+          <image class="attachment-icon" src="/assets/icons/wenjian.png" mode="aspectFit"></image>
+        </view>
+        <text class="attachment-label">文件</text>
+      </view>
+      <view class="attachment-item" bindtap="onChooseReport">
+        <view class="attachment-icon-wrapper">
+          <image class="attachment-icon" src="/assets/icons/baogao.png" mode="aspectFit"></image>
+        </view>
+        <text class="attachment-label">报告</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 聊天输入栏 -->
+  <view class="chat-toolbar">
+    <view class="input-panel">
+      <!-- 左侧相机按钮 -->
+      <view class="input-btn input-btn-camera" bindtap="onTakePhoto">
+        <image class="input-icon" src="/assets/icons/camera.png" mode="aspectFit"></image>
+      </view>
+      
+      <!-- 中间输入框 -->
+      <view class="input-wrapper">
+        <input
+          class="message-input"
+          type="text"
+          maxlength="300"
+          placeholder="请输入您想咨询的问题"
+          value="{{inputValue}}"
+          disabled="{{isSending}}"
+          bindinput="onInputChange"
+          bindconfirm="onSendMessage"
+          confirm-type="send"
+        />
+      </view>
+      
+      <!-- 右侧按钮组 -->
+      <view class="input-actions">
+        <!-- 有文字时显示发送按钮 -->
+        <view 
+          class="input-btn input-btn-send" 
+          wx:if="{{canSend && !isSending}}"
+          bindtap="onSendMessage"
+        >
+          <text class="send-text">发送</text>
+        </view>
+        
+        <!-- 无文字时显示语音和+按钮 -->
+        <view class="input-actions-secondary" wx:if="{{!canSend}}">
+          <view class="input-btn input-btn-voice" bindtap="onVoiceClick">
+            <image class="input-icon" src="/assets/icons/yuying.png" mode="aspectFit"></image>
+          </view>
+          <view 
+            class="input-btn input-btn-plus" 
+            bindtap="toggleAttachmentPanel"
+          >
+            <view class="icon-plus">
+              <view class="icon-plus-h"></view>
+              <view class="icon-plus-v"></view>
+            </view>
+          </view>
+        </view>
+        
+        <!-- 发送中显示加载状态 -->
+        <view class="input-btn input-btn-loading" wx:if="{{isSending}}">
+          <view class="loading-spinner"></view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

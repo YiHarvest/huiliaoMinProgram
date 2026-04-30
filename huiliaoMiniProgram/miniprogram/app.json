@@ -1,7 +1,9 @@
 {
   "pages": [
     "pages/home/home",
+    "pages/personal-data/index",
     "pages/workbench/workbench",
+    "pages/ai-assistant/index",
     "pages/chen-agent/chen-agent",
     "pages/scale-form/scale-form",
     "pages/questionnaire/questionnaire",
@@ -12,11 +14,16 @@
     "pages/experts/experts",
     "pages/expert-detail/expert-detail",
     "pages/mine/mine",
-    "pages/message-settings/message-settings"
+    "pages/profile/edit",
+    "pages/contact/contact",
+    "pages/message-settings/message-settings",
+    "pages/faq/faq",
+    "pages/privacy/privacy",
+    "pages/agreement/agreement"
   ],
   "window": {
     "navigationBarTextStyle": "black",
-    "navigationBarTitleText": "榕慧",
+    "navigationBarTitleText": "慧疗",
     "navigationBarBackgroundColor": "#FFFFFF",
     "backgroundColor": "#F5F5F5"
   },
@@ -33,16 +40,22 @@
         "selectedIconPath": "assets/icons/home-active.png"
       },
       {
-        "pagePath": "pages/workbench/workbench",
-        "text": "工作台",
-        "iconPath": "assets/icons/workbench.png",
-        "selectedIconPath": "assets/icons/workbench-active.png"
+        "pagePath": "pages/personal-data/index",
+        "text": "个人数据",
+        "iconPath": "assets/icons/personal-data.png",
+        "selectedIconPath": "assets/icons/personal-data-active.png"
+      },
+      {
+        "pagePath": "pages/ai-assistant/index",
+        "text": "智能助手",
+        "iconPath": "assets/icons/assistant-ai.png",
+        "selectedIconPath": "assets/icons/assistant-ai-active.png"
       },
       {
         "pagePath": "pages/mine/mine",
-        "text": "联系我们",
-        "iconPath": "assets/icons/contact.png",
-        "selectedIconPath": "assets/icons/contact-active.png"
+        "text": "我的",
+        "iconPath": "assets/icons/mine.png",
+        "selectedIconPath": "assets/icons/mine-active.png"
       }
     ]
   },
