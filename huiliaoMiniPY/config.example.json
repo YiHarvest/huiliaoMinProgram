@@ -4,15 +4,19 @@
     "sk": "your_life_emergence_secret_key",
     "base_url": "https://your-life-emergence-api-base-url"
   },
-  "server": {
-    "host": "0.0.0.0",
-    "port": 8010
-  },
+    "server": {
+        "host": "127.0.0.1",
+        "port": 3161
+    },
+    "tongue_server": {
+        "host": "127.0.0.1",
+        "port": 3162
+    },
   "database": {
     "type": "mysql",
     "mysql": {
       "host": "your_mysql_host",
-      "port": 3306,
+      "port": 13060,
       "user": "your_mysql_user",
       "password": "your_mysql_password",
       "database": "your_mysql_database"

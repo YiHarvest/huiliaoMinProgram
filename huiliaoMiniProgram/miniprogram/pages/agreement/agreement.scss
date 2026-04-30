@@ -1,0 +1,69 @@
+page {
+  background: #f6fbfa;
+}
+
+.page-scroll {
+  height: 100vh;
+}
+
+.page {
+  min-height: 100vh;
+  padding: 24rpx;
+}
+
+.section-card {
+  background: #ffffff;
+  border-radius: 28rpx;
+  padding: 32rpx;
+  box-shadow: 0 10rpx 24rpx rgba(18, 71, 62, 0.05);
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #1f2d2a;
+}
+
+.section-note {
+  font-size: 24rpx;
+  color: #00a88f;
+}
+
+.agreement-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32rpx;
+}
+
+.agreement-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.agreement-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #00a88f;
+  line-height: 42rpx;
+}
+
+.agreement-subtitle {
+  font-size: 26rpx;
+  color: #8b9b97;
+  line-height: 40rpx;
+}
+
+.agreement-text {
+  font-size: 26rpx;
+  color: #5a6b67;
+  line-height: 40rpx;
+  text-indent: 52rpx;
+}

@@ -1,0 +1,107 @@
+<view class="page">
+  <form bindsubmit="onSave" class="profile-form">
+    <!-- 头像区域 -->
+    <view class="avatar-section">
+      <button 
+        class="avatar-button" 
+        open-type="chooseAvatar" 
+        bindchooseavatar="onChooseAvatar"
+      >
+        <image 
+          class="avatar-img" 
+          src="{{profile.avatarUrl || '/assets/icons/mine.png'}}" 
+          mode="aspectFill"
+        ></image>
+      </button>
+      <text class="avatar-tip">点击更换头像</text>
+    </view>
+
+    <!-- 表单区域 -->
+    <view class="form-section">
+      <view class="form-card">
+        <!-- 昵称 -->
+        <view class="form-item">
+          <text class="form-label">昵称</text>
+          <view class="form-content">
+            <input 
+              class="form-input nickname-input" 
+              type="nickname" 
+              value="{{profile.nickname}}" 
+              placeholder="请输入昵称" 
+              bindinput="onNicknameInput" 
+              bindchange="onNicknameInput" 
+              bindblur="onNicknameInput" 
+            />
+          </view>
+        </view>
+
+      <!-- 用户ID -->
+      <view class="form-item">
+        <text class="form-label">用户ID</text>
+        <view class="form-content">
+          <text class="form-value">{{profile.userId || 'test_user_id'}}</text>
+          <text class="form-hint">只读</text>
+        </view>
+      </view>
+
+      <!-- 性别 -->
+      <view class="form-item">
+        <text class="form-label">性别</text>
+        <view class="form-content">
+          <view class="gender-group">
+            <view 
+              class="gender-option {{profile.gender === 'male' ? 'gender-option-active' : ''}}"
+              bindtap="onSelectGender"
+              data-gender="male"
+            >
+              <text>男</text>
+            </view>
+            <view 
+              class="gender-option {{profile.gender === 'female' ? 'gender-option-active' : ''}}"
+              bindtap="onSelectGender"
+              data-gender="female"
+            >
+              <text>女</text>
+            </view>
+            <view 
+              class="gender-option {{profile.gender === 'unknown' ? 'gender-option-active' : ''}}"
+              bindtap="onSelectGender"
+              data-gender="unknown"
+            >
+              <text>不便透露</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 出生日期 -->
+      <view class="form-item">
+        <text class="form-label">出生日期</text>
+        <view class="form-content">
+          <picker class="date-picker" mode="date" value="{{profile.birthday}}" bindchange="onBirthdayChange">
+            <view class="picker-value">
+              <text>{{profile.birthday || '请选择'}}</text>
+              <text class="picker-arrow">›</text>
+            </view>
+          </picker>
+        </view>
+      </view>
+
+      <!-- 年龄显示 -->
+      <view class="form-item" wx:if="{{profile.birthday}}">
+        <text class="form-label">年龄</text>
+        <view class="form-content">
+          <text class="form-value">{{age}} 岁</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部保存按钮 -->
+  <view class="bottom-btn-area">
+    <button class="save-btn" form-type="submit">
+      <text class="save-btn-text">保存资料</text>
+    </button>
+  </view>
+  </form>
+</view>

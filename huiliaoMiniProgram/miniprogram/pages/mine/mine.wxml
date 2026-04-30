@@ -1,121 +1,134 @@
 <scroll-view class="page-scroll" scroll-y enable-flex="true">
   <view class="page">
-    <view class="hero-card">
-      <view class="hero-glow hero-glow-a"></view>
-      <view class="hero-glow hero-glow-b"></view>
+    <!-- 用户信息卡片 -->
+    <view class="user-card">
+      <view class="user-card-bg"></view>
+      <view class="user-card-glow"></view>
       
-      <view class="hero-header">
-        <view class="hero-logo">
-          <text class="hero-logo-text">榕慧</text>
+      <view class="user-content">
+        <view class="user-left">
+          <view class="avatar-wrap">
+            <image 
+              class="avatar" 
+              src="{{profile.avatarUrl || '/assets/icons/mine.png'}}" 
+              mode="aspectFill"
+            ></image>
+            <view class="avatar-badge">
+              <text class="badge-text">+</text>
+            </view>
+          </view>
+          
+          <view class="user-detail">
+            <text class="user-name">{{profile.nickname || '用户昵称'}}</text>
+            <text class="user-id">ID: {{profile.userId || 'test_user_id'}}</text>
+          </view>
         </view>
-        <view class="hero-company">
-          <text class="hero-company-name">榕慧科技（杭州）有限公司</text>
+        
+        <view class="edit-btn" bindtap="onEditProfile">
+          <text class="edit-icon">✏️</text>
+          <text class="edit-text">完善资料</text>
         </view>
       </view>
       
-      <text class="hero-title">联系我们</text>
-      <text class="hero-desc"></text>
-
-      <view class="hero-tag-list">
-        <text 
-          class="hero-tag" 
-          wx:for="{{serviceTags}}" 
-          wx:key="*this"
-          data-tag="{{item}}"
-          bindtap="onServiceTagTap"
-          hover-class="hero-tag-hover"
-          hover-stay-time="80"
-        >{{item}}</text>
+      <view class="user-status">
+        <text class="status-text">健康档案 · 已完善基础资料</text>
       </view>
     </view>
 
-    <view class="section-card">
-      <view class="section-head">
-        <text class="section-title">联系方式</text>
-        <text class="section-note">快速直达</text>
-      </view>
-
-      <view class="contact-list">
-        <view
-          class="contact-card"
-          wx:for="{{contactCards}}"
-          wx:key="key"
-          data-action="{{item.action}}"
-          data-value="{{item.value}}"
-          data-label="{{item.toastLabel}}"
-          bindtap="onContactAction"
-          hover-class="contact-card-hover"
+    <!-- 功能菜单 -->
+    <view class="menu-section">
+      <view class="menu-group">
+        <view 
+          class="menu-item" 
+          bindtap="onNavigateToPersonalData"
+          hover-class="menu-item-hover"
           hover-stay-time="80"
         >
-          <view class="contact-icon contact-icon-{{item.theme}}">
-            <text class="contact-icon-text">{{item.icon}}</text>
+          <view class="menu-icon menu-icon-data">
+            <text class="menu-icon-text">📊</text>
           </view>
-
-          <view class="contact-main">
-            <text class="contact-label">{{item.label}}</text>
-            <text class="contact-value">{{item.value}}</text>
-            <text class="contact-hint">{{item.hint}}</text>
+          <view class="menu-content">
+            <text class="menu-label">我的数据</text>
           </view>
-
-          <view class="contact-action">{{item.actionText}}</view>
+          <view class="menu-arrow">
+            <text class="arrow-icon">›</text>
+          </view>
         </view>
-      </view>
-    </view>
 
-    <view class="section-card office-card">
-      <view class="section-head">
-        <text class="section-title">联系说明</text>
-        <text class="section-note">服务支持</text>
-      </view>
-
-      <view class="office-highlight">
-        <text class="office-title">{{companyInfo.name}}</text>
-        <text class="office-desc">欢迎洽谈产品合作、医疗服务模式共建与专家网络相关咨询。</text>
-      </view>
-
-      <view class="office-meta">
-        <view class="office-meta-item">
-          <text class="office-meta-label">服务方向</text>
-          <text class="office-meta-value">产品咨询 / 合作沟通 / 商务对接</text>
-        </view>
-        <view class="office-meta-item">
-          <text class="office-meta-label">推荐方式</text>
-          <text class="office-meta-value">电话快速沟通，邮箱发送资料，地址复制后可直接导航</text>
-        </view>
-      </view>
-    </view>
-
-    <view class="section-card follow-card">
-      <view class="section-head">
-        <text class="section-title">关注我们</text>
-        <text class="section-note">公众号</text>
-      </view>
-
-      <text class="follow-desc">扫描下方二维码，关注公众号获取更多信息。</text>
-
-      <view class="qrcode-shell" bindtap="onPreviewQrCode">
-        <image class="qrcode-image" src="{{qrcodeSrc}}" mode="aspectFit"></image>
-      </view>
-
-      <text class="follow-tip">点击二维码可放大预览</text>
-      
-      <view class="customer-service-wrap">
-        <button 
-          class="customer-service-btn" 
-          open-type="contact" 
-          session-from="mine-page"
-          hover-class="customer-service-btn-hover"
+        <view 
+          class="menu-item" 
+          bindtap="onContactUs"
+          hover-class="menu-item-hover"
           hover-stay-time="80"
         >
-          <text class="customer-service-icon">💬</text>
-          <text class="customer-service-text">在线客服</text>
-        </button>
+          <view class="menu-icon menu-icon-contact">
+            <text class="menu-icon-text">💬</text>
+          </view>
+          <view class="menu-content">
+            <text class="menu-label">联系我们</text>
+          </view>
+          <view class="menu-arrow">
+            <text class="arrow-icon">›</text>
+          </view>
+        </view>
+
+        <view 
+          class="menu-item" 
+          bindtap="onFAQ"
+          hover-class="menu-item-hover"
+          hover-stay-time="80"
+        >
+          <view class="menu-icon menu-icon-faq">
+            <text class="menu-icon-text">❓</text>
+          </view>
+          <view class="menu-content">
+            <text class="menu-label">常见问题</text>
+          </view>
+          <view class="menu-arrow">
+            <text class="arrow-icon">›</text>
+          </view>
+        </view>
+
+        <view 
+          class="menu-item" 
+          bindtap="onPrivacyPolicy"
+          hover-class="menu-item-hover"
+          hover-stay-time="80"
+        >
+          <view class="menu-icon menu-icon-privacy">
+            <text class="menu-icon-text">🔒</text>
+          </view>
+          <view class="menu-content">
+            <text class="menu-label">隐私政策</text>
+          </view>
+          <view class="menu-arrow">
+            <text class="arrow-icon">›</text>
+          </view>
+        </view>
+
+        <view 
+          class="menu-item" 
+          bindtap="onUserAgreement"
+          hover-class="menu-item-hover"
+          hover-stay-time="80"
+        >
+          <view class="menu-icon menu-icon-agreement">
+            <text class="menu-icon-text">📄</text>
+          </view>
+          <view class="menu-content">
+            <text class="menu-label">用户协议</text>
+          </view>
+          <view class="menu-arrow">
+            <text class="arrow-icon">›</text>
+          </view>
+        </view>
       </view>
     </view>
 
-    <view class="footer">
-      <text class="footer-company">{{companyInfo.name}}</text>
-      <text class="footer-copy">让 AI 成为医疗专家的得力助手</text>
+    <!-- 版本信息 -->
+    <view class="version-info">
+      <text class="version-text">v1.2.0</text>
+      <text class="copyright">银川慧疗互联网医院</text>
     </view>
   </view>
 </scroll-view>

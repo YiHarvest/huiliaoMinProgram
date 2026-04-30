@@ -1,11 +1,98 @@
 <view class="page">
-  <scroll-view class="page-scroll" scroll-y enable-flex="true" scroll-into-view="{{reportScrollId}}">
+  <!-- 摄像头录制模式 -->
+  <view class="camera-mode" wx:if="{{showCameraMode}}">
+    <view class="camera-header">
+      <text class="camera-title">健康筛查视频录制</text>
+      <text class="camera-subtitle">视频生成报告后自动删除不保留</text>
+    </view>
+
+    <view class="camera-container">
+      <view class="camera-circle">
+        <camera 
+          id="tongueCamera" 
+          class="camera-preview" 
+          device-position="front" 
+          flash="off" 
+          resolution="high" 
+          frame-size="small"
+          binderror="onCameraError"
+          bindinitdone="onCameraInitDone"
+        ></camera>
+        
+        <!-- 圆形边框 -->
+        <view class="camera-frame"></view>
+
+        <!-- 人脸检测框 -->
+        <view class="face-indicator" wx:if="{{faceRect}}">
+          <view 
+            class="face-box" 
+            style="left: {{faceRect.x}}rpx; top: {{faceRect.y}}rpx; width: {{faceRect.width}}rpx; height: {{faceRect.height}}rpx;"
+          ></view>
+        </view>
+      </view>
+
+      <!-- 检测状态提示 -->
+      <view class="camera-tip">
+        <text class="tip-text">{{cameraTip}}</text>
+      </view>
+
+      <!-- 提示图标 - 放大 -->
+      <view class="camera-hints">
+        <view class="hint-item">
+          <view class="hint-icon sun-icon">☀</view>
+          <text class="hint-text">{{lightTip}}</text>
+        </view>
+        <view class="hint-item">
+          <view class="hint-icon mouth-icon">👄</view>
+          <text class="hint-text">跟随提示</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 录制时长显示 -->
+    <view class="record-timer" wx:if="{{isRecording}}">
+      <text class="timer-text">{{recordDuration}}s</text>
+      <text class="timer-hint" wx:if="{{canStopRecording}}">可停止录制</text>
+    </view>
+
+    <!-- 底部按钮 -->
+    <view class="camera-actions">
+      <button 
+        class="action-btn action-btn-secondary {{buttonState === 'analyzing' ? 'action-btn-disabled' : ''}}" 
+        bindtap="onChooseFromAlbum"
+        disabled="{{buttonState === 'analyzing'}}"
+      >
+        相册选取
+      </button>
+      <button 
+        class="action-btn action-btn-primary {{buttonState === 'recording' ? 'action-btn-recording' : ''}} {{buttonState === 'analyzing' ? 'action-btn-disabled' : ''}}" 
+        bindtap="onToggleRecord"
+        disabled="{{buttonState === 'analyzing'}}"
+      >
+        <block wx:if="{{buttonState === 'recording'}}">
+          {{canStopRecording ? '结束录制' : '录制中 ' + recordDuration + 's'}}
+        </block>
+        <block wx:elif="{{buttonState === 'analyzing'}}">
+          分析中...
+        </block>
+        <block wx:else>
+          开始录制
+        </block>
+      </button>
+    </view>
+  </view>
+
+  <!-- 原有上传模式 -->
+  <scroll-view class="page-scroll" scroll-y enable-flex="true" scroll-into-view="{{reportScrollId}}" wx:else>
     <view class="content">
       <view class="section-card media-card">
         <view class="card-head">
           <view class="card-title-row">
             <text class="card-title">舌苔视频</text>
             <text class="field-tag field-tag-required">必填</text>
+          </view>
+          <view class="card-actions" wx:if="{{!tongueVideo}}">
+            <text class="card-action" bindtap="switchToCameraMode">切换到录制模式</text>
           </view>
         </view>
 
@@ -25,7 +112,7 @@
         <view class="media-action-row" wx:if="{{tongueVideo}}">
           <text class="media-action" bindtap="onPreviewVideo">预览</text>
           <text class="media-action" bindtap="onRechooseVideo">重新上传</text>
-          <text class="media-action media-action-danger" bindtap="onRemoveMedia" data-field="tongueVideo">删除</text>
+          <text class="media-action media-action-danger" bindtap="onDeleteMedia" data-field="tongueVideo">删除</text>
         </view>
 
         <view class="video-file-info" wx:if="{{tongueVideo}}">
@@ -47,6 +134,7 @@
         </view>
       </view>
 
+      <!-- 舌上照片模块 - 暂不显示
       <view class="section-card media-card">
         <view class="card-head">
           <view class="card-title-row">
@@ -72,11 +160,13 @@
         <view class="media-action-row" wx:if="{{topImage}}">
           <text class="media-action" bindtap="onPreviewImage" data-url="{{topImage.url}}">预览</text>
           <text class="media-action" bindtap="onRechooseImage" data-field="topImage">重新上传</text>
-          <text class="media-action media-action-danger" bindtap="onRemoveMedia" data-field="topImage">删除</text>
+          <text class="media-action media-action-danger" bindtap="onDeleteMedia" data-field="topImage">删除</text>
         </view>
         <text class="media-hint">请在自然光照下拍摄舌头上表面，确保舌苔清晰可见。</text>
       </view>
+      -->
 
+      <!-- 舌下照片模块 - 暂不显示
       <view class="section-card media-card">
         <view class="card-head">
           <view class="card-title-row">
@@ -102,11 +192,13 @@
         <view class="media-action-row" wx:if="{{bottomImage}}">
           <text class="media-action" bindtap="onPreviewImage" data-url="{{bottomImage.url}}">预览</text>
           <text class="media-action" bindtap="onRechooseImage" data-field="bottomImage">重新上传</text>
-          <text class="media-action media-action-danger" bindtap="onRemoveMedia" data-field="bottomImage">删除</text>
+          <text class="media-action media-action-danger" bindtap="onDeleteMedia" data-field="bottomImage">删除</text>
         </view>
         <text class="media-hint">请在自然光照下拍摄舌头下表面，确保舌苔清晰可见。</text>
       </view>
+      -->
 
+      <!-- 面部照片模块 - 暂不显示
       <view class="section-card media-card">
         <view class="card-head">
           <view class="card-title-row">
@@ -132,10 +224,11 @@
         <view class="media-action-row" wx:if="{{faceImage}}">
           <text class="media-action" bindtap="onPreviewImage" data-url="{{faceImage.url}}">预览</text>
           <text class="media-action" bindtap="onRechooseImage" data-field="faceImage">重新上传</text>
-          <text class="media-action media-action-danger" bindtap="onRemoveMedia" data-field="faceImage">删除</text>
+          <text class="media-action media-action-danger" bindtap="onDeleteMedia" data-field="faceImage">删除</text>
         </view>
         <text class="media-hint">请在自然光照下拍摄，无美颜、化妆，避免识别误差，保持表情自然。</text>
       </view>
+      -->
 
       <view class="section-card requirement-card">
         <view class="card-head">
@@ -282,7 +375,7 @@
     </view>
   </scroll-view>
 
-  <view class="submit-bar">
+  <view class="submit-bar" wx:if="{{!showCameraMode}}">
     <button class="submit-btn {{(!canSubmit || isSubmitting) ? 'submit-btn-disabled' : ''}}" disabled="{{!canSubmit || isSubmitting}}" bindtap="onSubmit">
       {{isSubmitting ? '正在上传并分析，请稍候' : '上传分析'}}
     </button>

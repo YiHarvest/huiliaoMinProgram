@@ -84,6 +84,32 @@
       </view>
     </view>
 
+    <!-- 功能介绍 -->
+    <view class="section intro-section">
+      <view class="intro-content">
+        <text class="intro-title">功能介绍：</text>
+        <view class="intro-list">
+          <view class="intro-item">
+            <view class="intro-number">1</view>
+            <view class="intro-text">填写量表——分析专病问题</view>
+          </view>
+          <view class="intro-item">
+            <view class="intro-number">2</view>
+            <view class="intro-text">上传舌苔——辨识中医体质</view>
+          </view>
+          <view class="intro-item">
+            <view class="intro-number">3</view>
+            <view class="intro-text">上传报告——识别生理指标</view>
+          </view>
+          <view class="intro-item">
+            <view class="intro-number">4</view>
+            <view class="intro-text">整合各项数据——生成专属全面的健康画像。AI医生智能体会为您定制个性化调理与治疗方案，高效守护您的健康。</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 
     <view class="section compact-section">
       <view class="section-header">
         <text class="section-title">榕慧模式</text>
@@ -123,5 +149,6 @@
         <view class="cta-btn cta-btn-secondary" bindtap="onAboutTap">关于我们</view>
       </view>
     </view>
+    -->
   </scroll-view>
 </view>

@@ -1,0 +1,75 @@
+<scroll-view class="page-scroll" scroll-y enable-flex="true">
+  <view class="page">
+    <view class="section-card">
+      <view class="section-head">
+        <text class="section-title">隐私政策</text>
+        <text class="section-note">用户隐私保护</text>
+      </view>
+
+      <view class="policy-content">
+        <view class="policy-section">
+          <text class="policy-title">一、隐私政策的适用范围</text>
+          <text class="policy-text">本隐私政策适用于银川慧疗互联网医院（以下简称"我们"）提供的舌诊分析服务。我们尊重并保护用户的个人隐私，致力于为用户提供安全、可靠的服务体验。</text>
+        </view>
+
+        <view class="policy-section">
+          <text class="policy-title">二、收集的信息类型</text>
+          <text class="policy-text">1. 用户上传的舌面视频数据，用于中医舌诊分析；</text>
+          <text class="policy-text">2. 用户的微信昵称、头像等基本信息，用于身份识别；</text>
+          <text class="policy-text">3. 设备信息，包括设备型号、操作系统版本等，用于优化服务体验；</text>
+          <text class="policy-text">4. 使用日志，包括访问时间、功能使用情况等，用于服务改进。</text>
+        </view>
+
+        <view class="policy-section">
+          <text class="policy-title">三、信息的使用方式</text>
+          <text class="policy-text">1. 视频数据仅用于AI舌诊分析，生成健康报告；</text>
+          <text class="policy-text">2. 用户信息用于提供个性化服务和维护账户安全；</text>
+          <text class="policy-text">3. 使用数据用于分析服务使用情况，优化产品功能；</text>
+          <text class="policy-text">4. 不会将用户数据用于任何商业广告目的。</text>
+        </view>
+
+        <view class="policy-section">
+          <text class="policy-title">四、信息的保护措施</text>
+          <text class="policy-text">1. 采用加密技术传输和存储用户数据；</text>
+          <text class="policy-text">2. 严格控制数据访问权限，仅授权人员可访问必要数据；</text>
+          <text class="policy-text">3. 定期进行安全审计，确保数据安全；</text>
+          <text class="policy-text">4. 视频分析完成后，原始数据将在规定时间内删除。</text>
+        </view>
+
+        <view class="policy-section">
+          <text class="policy-title">五、信息的共享与披露</text>
+          <text class="policy-text">1. 不会向第三方出售、出租或共享用户个人信息；</text>
+          <text class="policy-text">2. 仅在法律要求或用户明确授权的情况下披露信息；</text>
+          <text class="policy-text">3. 可能与合作伙伴共享匿名化的统计数据，用于研究和服务优化。</text>
+        </view>
+
+        <view class="policy-section">
+          <text class="policy-title">六、用户的权利</text>
+          <text class="policy-text">1. 用户有权访问、更正或删除个人信息；</text>
+          <text class="policy-text">2. 用户可以随时注销账户，相关数据将被删除；</text>
+          <text class="policy-text">3. 用户有权拒绝提供非必要的个人信息。</text>
+        </view>
+
+        <view class="policy-section">
+          <text class="policy-title">七、儿童隐私保护</text>
+          <text class="policy-text">我们非常重视儿童的隐私保护。13岁以下的儿童在使用我们的服务前，应获得其监护人的同意。我们不会故意收集儿童的个人信息。</text>
+        </view>
+
+        <view class="policy-section">
+          <text class="policy-title">八、隐私政策的更新</text>
+          <text class="policy-text">我们可能会不定期更新隐私政策。更新后会在小程序内公告，用户继续使用服务即表示同意更新后的政策。</text>
+        </view>
+
+        <view class="policy-section">
+          <text class="policy-title">九、联系方式</text>
+          <text class="policy-text">如果您对隐私政策有任何疑问或建议，请通过"联系我们"页面与我们联系。</text>
+        </view>
+
+        <view class="policy-section">
+          <text class="policy-title">十、生效日期</text>
+          <text class="policy-text">本隐私政策自发布之日起生效。</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</scroll-view>

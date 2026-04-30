@@ -1,0 +1,57 @@
+<view class="page-container">
+  <view class="tabs-container">
+    <view 
+      wx:for="{{tabs}}" 
+      wx:key="key"
+      class="tab-item {{activeTab === item.key ? 'active' : ''}}"
+      bindtap="switchTab"
+      data-tab="{{item.key}}"
+    >
+      <text class="tab-text">{{item.label}}</text>
+      <view class="tab-indicator" wx:if="{{activeTab === item.key}}"></view>
+    </view>
+  </view>
+
+  <scroll-view class="content-scroll" scroll-y>
+    <view wx:if="{{loading}}" class="loading-container">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">加载中...</text>
+    </view>
+
+    <view wx:elif="{{error}}" class="error-container">
+      <text class="error-text">加载失败，请稍后重试</text>
+      <button class="retry-btn" bindtap="retryLoad">重新加载</button>
+    </view>
+
+    <view wx:elif="{{currentList.length === 0}}" class="empty-container">
+      <view class="empty-icon">
+        <text class="empty-icon-text">📊</text>
+      </view>
+      <text class="empty-text">{{emptyText}}</text>
+    </view>
+
+    <view wx:else class="list-container">
+      <view 
+        wx:for="{{currentList}}" 
+        wx:key="id"
+        class="list-card"
+        bindtap="handleView"
+        data-item="{{item}}"
+      >
+        <view class="card-left">
+          <view class="card-icon">{{item.icon}}</view>
+        </view>
+        <view class="card-center">
+          <text class="card-title">{{item.title}}</text>
+          <text class="card-time">{{item.createdAt}}</text>
+          <text wx:if="{{activeTab === 'questionnaire'}}" class="card-score">评分：{{item.score}}分</text>
+          <text wx:if="{{activeTab === 'tongue'}}" class="card-summary">{{item.summary}}</text>
+          <text wx:if="{{activeTab === 'report'}}" class="card-type">{{item.type}} · {{item.status}}</text>
+        </view>
+        <view class="card-right">
+          <text class="view-btn">查看</text>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+</view>
