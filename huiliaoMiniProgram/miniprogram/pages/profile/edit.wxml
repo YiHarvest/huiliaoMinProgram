@@ -11,6 +11,7 @@
           class="avatar-img" 
           src="{{profile.avatarUrl || '/assets/icons/mine.png'}}" 
           mode="aspectFill"
+          binderror="onAvatarError"
         ></image>
       </button>
       <text class="avatar-tip">点击更换头像</text>
@@ -39,7 +40,7 @@
       <view class="form-item">
         <text class="form-label">用户ID</text>
         <view class="form-content">
-          <text class="form-value">{{profile.userId || 'test_user_id'}}</text>
+          <text class="form-value">{{profile.userCode || '未登录'}}</text>
           <text class="form-hint">只读</text>
         </view>
       </view>
@@ -84,6 +85,37 @@
               <text class="picker-arrow">›</text>
             </view>
           </picker>
+        </view>
+      </view>
+
+      <!-- 手机号 -->
+      <view class="form-item">
+        <text class="form-label">手机号</text>
+        <view class="form-content">
+          <input 
+            class="form-input" 
+            type="number" 
+            value="{{profile.phone}}" 
+            placeholder="请输入手机号" 
+            maxlength="11"
+            bindinput="onPhoneInput" 
+          />
+        </view>
+      </view>
+
+      <!-- 身份证号 -->
+      <view class="form-item">
+        <text class="form-label">身份证号</text>
+        <view class="form-content">
+          <input 
+            class="form-input" 
+            type="text" 
+            value="{{profile.idCard || profile.idCardMasked}}" 
+            placeholder="{{profile.idCardMasked ? '已绑定身份证' : '请输入身份证号'}}" 
+            maxlength="18"
+            bindinput="onIdCardInput" 
+          />
+          <text class="form-hint" wx:if="{{profile.idCardMasked}}">已脱敏显示</text>
         </view>
       </view>
 

@@ -129,9 +129,42 @@ class ChatProxyHandler(BaseHTTPRequestHandler):
         self._write_json({})
 
     def do_GET(self) -> None:
+        import os
+        import mimetypes
+
         parsed_url = parse.urlparse(self.path)
         path = parsed_url.path
         query = parse.parse_qs(parsed_url.query)
+
+        if path.startswith('/uploads/avatars/'):
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            avatars_dir = os.path.join(base_dir, 'Image', 'avatars')
+            filename = path.replace('/uploads/avatars/', '')
+            safe_filename = os.path.basename(filename)
+
+            file_path = os.path.join(avatars_dir, safe_filename)
+
+            if not os.path.exists(file_path) or not os.path.isfile(file_path):
+                self.send_response(404)
+                self.send_header('Content-Type', 'text/plain')
+                self.end_headers()
+                self.wfile.write(b'File not found')
+                return
+
+            mime_type, _ = mimetypes.guess_type(file_path)
+            content_type = mime_type or 'application/octet-stream'
+
+            with open(file_path, 'rb') as f:
+                file_content = f.read()
+
+            self.send_response(200)
+            self.send_header('Content-Type', content_type)
+            self.send_header('Content-Length', str(len(file_content)))
+            self.send_header('Cache-Control', 'public, max-age=86400')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(file_content)
+            return
 
         if path == '/health':
             self._write_json(
@@ -145,6 +178,15 @@ class ChatProxyHandler(BaseHTTPRequestHandler):
 
         if path == '/api/subscription/config':
             self._write_json(get_frontend_subscribe_config())
+            return
+
+        if path == '/api/user/profile':
+            # GET 请求从查询参数获取 userId
+            user_id = str((query.get('userId') or [''])[0]).strip()
+            if user_id:
+                self.handle_user_profile({'userId': user_id})
+            else:
+                self._write_json({'error': 'userId 不能为空'}, status=400)
             return
 
         if path == '/api/subscription/status':
@@ -249,6 +291,10 @@ class ChatProxyHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         path = parse.urlparse(self.path).path
 
+        if path == '/api/user/avatar/upload':
+            self.handle_avatar_upload()
+            return
+
         try:
             payload = parse_json_body(self)
         except ValueError as exc:
@@ -257,6 +303,10 @@ class ChatProxyHandler(BaseHTTPRequestHandler):
 
         if path == '/api/wxapp/login':
             self.handle_login(payload)
+            return
+
+        if path == '/api/user/profile':
+            self.handle_user_profile(payload)
             return
 
         if path == '/api/subscription/record':
@@ -374,6 +424,188 @@ class ChatProxyHandler(BaseHTTPRequestHandler):
         except Exception as exc:
             print('DEBUG chat exception:', repr(exc))
             self._write_json({'error': str(exc)}, status=502)
+
+    def handle_user_profile(self, payload: dict[str, Any]) -> None:
+        try:
+            from mysql_storage import get_user_profile_mysql, upsert_user_profile_mysql, get_user_by_user_code_mysql, get_user_sensitive_info_mysql, upsert_user_sensitive_info_mysql
+            
+            user_id = payload.get('userId') or payload.get('user_id')
+            if not user_id:
+                self._write_json({'error': 'userId 不能为空'}, status=400)
+                return
+            
+            user_id_int = None
+            
+            # 尝试将 userId 解析为整数（users.id）
+            try:
+                user_id_int = int(user_id)
+            except ValueError:
+                # 如果不是整数，尝试作为 user_code 查询
+                user_info = get_user_by_user_code_mysql(str(user_id))
+                if user_info:
+                    user_id_int = user_info['id']
+            
+            if user_id_int is None:
+                self._write_json({'error': 'userId 无效，既不是有效的用户ID也不是有效的用户编码'}, status=400)
+                return
+            
+            # GET 请求：获取用户资料
+            if self.command == 'GET':
+                profile = get_user_profile_mysql(user_id_int)
+                sensitive_info = get_user_sensitive_info_mysql(user_id_int) or {}
+                
+                if profile:
+                    self._write_json({
+                        'success': True,
+                        'data': {
+                            'nickname': profile.get('nickname'),
+                            'avatarUrl': profile.get('avatarUrl'),
+                            'gender': profile.get('gender'),
+                            'birthday': profile.get('birthday'),
+                            'updatedAt': profile.get('updatedAt'),
+                            # 添加敏感信息（脱敏）
+                            'phone': sensitive_info.get('phone'),
+                            'phoneMasked': sensitive_info.get('phoneMasked'),
+                            'idCardMasked': sensitive_info.get('idCardMasked'),
+                        }
+                    })
+                else:
+                    self._write_json({
+                        'success': True,
+                        'data': None
+                    })
+            # POST 请求：保存用户资料
+            elif self.command == 'POST':
+                # 过滤头像：如果是微信临时路径，不保存
+                avatar_url = payload.get('avatarUrl') or payload.get('avatar_url')
+                if avatar_url and avatar_url.startswith('http://tmp/'):
+                    avatar_url = None
+                
+                # 保存基本资料
+                profile = upsert_user_profile_mysql(
+                    user_id=user_id_int,
+                    nickname=payload.get('nickname'),
+                    avatar_url=avatar_url,
+                    gender=payload.get('gender'),
+                    birthday=payload.get('birthday'),
+                )
+                
+                # 保存敏感信息（手机号、身份证号）
+                sensitive_info = {}
+                try:
+                    sensitive_info = upsert_user_sensitive_info_mysql(
+                        user_id=user_id_int,
+                        phone=payload.get('phone'),
+                        id_card=payload.get('idCard'),
+                    )
+                except ValueError as e:
+                    # 如果敏感信息校验失败，只返回错误，不影响基本资料保存
+                    self._write_json({
+                        'success': False,
+                        'error': str(e)
+                    })
+                    return
+                
+                self._write_json({
+                    'success': True,
+                    'data': {
+                        'nickname': profile.get('nickname'),
+                        'avatarUrl': profile.get('avatarUrl'),
+                        'gender': profile.get('gender'),
+                        'birthday': profile.get('birthday'),
+                        'updatedAt': profile.get('updatedAt'),
+                        # 返回脱敏后的敏感信息
+                        'phone': sensitive_info.get('phone'),
+                        'phoneMasked': sensitive_info.get('phoneMasked'),
+                        'idCardMasked': sensitive_info.get('idCardMasked'),
+                    }
+                })
+            else:
+                self._write_json({'error': '不支持的请求方法'}, status=405)
+        except Exception as exc:
+            print(f'[ERROR] handle_user_profile 异常: {repr(exc)}')
+            self._write_json({'error': str(exc)}, status=500)
+
+    def handle_avatar_upload(self) -> None:
+        import os
+        import time
+        from cgi import FieldStorage
+
+        content_type = self.headers.get('Content-Type', '')
+
+        if 'multipart/form-data' not in content_type:
+            self._write_json({'error': '请求必须是 multipart/form-data 格式'}, status=400)
+            return
+
+        try:
+            form = FieldStorage(
+                fp=self.rfile,
+                headers=self.headers,
+                environ={
+                    'REQUEST_METHOD': 'POST',
+                    'CONTENT_TYPE': content_type,
+                }
+            )
+
+            user_id = form.getvalue('userId')
+            user_code = form.getvalue('userCode')
+
+            if not user_id and not user_code:
+                self._write_json({'error': 'userId 或 userCode 不能为空'}, status=400)
+                return
+
+            if 'file' not in form:
+                self._write_json({'error': '缺少 file 字段'}, status=400)
+                return
+
+            file_item = form['file']
+            if not file_item.filename or not file_item.file:
+                self._write_json({'error': '无效的文件'}, status=400)
+                return
+
+            filename = file_item.filename.lower()
+            allowed_extensions = {'.jpg', '.jpeg', '.png', '.webp'}
+            file_ext = os.path.splitext(filename)[1]
+
+            if file_ext not in allowed_extensions:
+                self._write_json({'error': '只支持 jpg、jpeg、png、webp 格式'}, status=400)
+                return
+
+            file_data = file_item.file.read()
+            max_size = 5 * 1024 * 1024
+
+            if len(file_data) > max_size:
+                self._write_json({'error': '文件大小不能超过 5MB'}, status=400)
+                return
+
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            avatars_dir = os.path.join(base_dir, 'Image', 'avatars')
+
+            if not os.path.exists(avatars_dir):
+                os.makedirs(avatars_dir, exist_ok=True)
+
+            safe_user_code = str(user_code or user_id).replace('/', '_').replace('\\', '_')
+            timestamp = int(time.time() * 1000)
+            saved_filename = f"{safe_user_code}_{timestamp}{file_ext}"
+            saved_path = os.path.join(avatars_dir, saved_filename)
+
+            with open(saved_path, 'wb') as f:
+                f.write(file_data)
+
+            avatar_url = f"https://miniprogram.huiliaoyiyuan.com/uploads/avatars/{saved_filename}"
+
+            print(f'[avatar] 上传成功: {saved_filename}, 大小: {len(file_data)} bytes')
+
+            self._write_json({
+                'success': True,
+                'data': {
+                    'avatarUrl': avatar_url
+                }
+            })
+
+        except Exception as e:
+            print(f'[avatar] 上传失败: {e}')
+            self._write_json({'error': f'上传失败: {str(e)}'}, status=500)
 
     def handle_subscription_record(self, payload: dict[str, Any]) -> None:
         user_id = str(payload.get('userId') or payload.get('user_id') or '').strip()

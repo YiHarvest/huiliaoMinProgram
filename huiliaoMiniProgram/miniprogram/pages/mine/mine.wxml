@@ -12,6 +12,7 @@
               class="avatar" 
               src="{{profile.avatarUrl || '/assets/icons/mine.png'}}" 
               mode="aspectFill"
+              binderror="onAvatarError"
             ></image>
             <view class="avatar-badge">
               <text class="badge-text">+</text>
@@ -20,7 +21,7 @@
           
           <view class="user-detail">
             <text class="user-name">{{profile.nickname || '用户昵称'}}</text>
-            <text class="user-id">ID: {{profile.userId || 'test_user_id'}}</text>
+            <text class="user-id">ID: {{profile.userCode || '未登录'}}</text>
           </view>
         </view>
         
@@ -31,7 +32,12 @@
       </view>
       
       <view class="user-status">
-        <text class="status-text">健康档案 · 已完善基础资料</text>
+        <text class="status-text">健康档案 · {{profileProgress.text}}</text>
+        <view class="progress-bar" wx:if="{{profileProgress.percent < 100}}">
+          <view class="progress-bg">
+            <view class="progress-fill" style="width: {{profileProgress.percent}}%"></view>
+          </view>
+        </view>
       </view>
     </view>
 

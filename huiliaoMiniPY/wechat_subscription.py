@@ -73,9 +73,36 @@ def get_wechat_mini_program_config() -> dict[str, Any]:
             },
         }
 
+    # 优先读取 wechat 配置节点
+    wechat_config = config.get('wechat') or {}
+    app_id = wechat_config.get('appid') or wechat_config.get('app_id')
+    
+    # 兼容 wxapp 配置节点
+    if not app_id:
+        wxapp_config = config.get('wxapp') or {}
+        app_id = wxapp_config.get('appid') or wxapp_config.get('app_id')
+    
+    # 兼容旧的 wechat_mini_program 配置节点
+    if not app_id:
+        app_id = mini_program.get('app_id')
+    
+    # 设置默认值
+    if not app_id or str(app_id).startswith('TODO_'):
+        app_id = 'TODO_MINIPROGRAM_APPID'
+
+    # 同样处理 app_secret
+    app_secret = wechat_config.get('secret') or wechat_config.get('app_secret')
+    if not app_secret:
+        wxapp_config = config.get('wxapp') or {}
+        app_secret = wxapp_config.get('secret') or wxapp_config.get('app_secret')
+    if not app_secret:
+        app_secret = mini_program.get('app_secret')
+    if not app_secret or str(app_secret).startswith('TODO_'):
+        app_secret = 'TODO_MINIPROGRAM_SECRET'
+
     return {
-        'app_id': mini_program.get('app_id') or 'TODO_MINIPROGRAM_APPID',
-        'app_secret': mini_program.get('app_secret') or 'TODO_MINIPROGRAM_SECRET',
+        'app_id': app_id,
+        'app_secret': app_secret,
         'subscribe_templates': merged_templates,
     }
 
@@ -147,6 +174,13 @@ def exchange_code_for_session(code: str) -> dict[str, Any]:
     if str(app_id).startswith('TODO_') or str(app_secret).startswith('TODO_'):
         raise RuntimeError('小程序 appid 或 secret 尚未配置')
 
+    # 打印日志用于排查
+    code_length = len(code) if code else 0
+    code_prefix = code[:6] if code_length >= 6 else code
+    code_suffix = code[-4:] if code_length >= 4 else ''
+    print(f"[登录调试] appid: {app_id}")
+    print(f"[登录调试] code 长度: {code_length}, 前缀: {code_prefix}, 后缀: {code_suffix}")
+
     query = parse.urlencode(
         {
             'appid': app_id,
@@ -155,9 +189,13 @@ def exchange_code_for_session(code: str) -> dict[str, Any]:
             'grant_type': 'authorization_code',
         }
     )
+    
+    print(f"[登录调试] 请求微信接口: sns/jscode2session")
     result = http_json_request(
         f'https://api.weixin.qq.com/sns/jscode2session?{query}'
     )
+    
+    print(f"[登录调试] 微信接口返回: {json.dumps(result, ensure_ascii=False)}")
 
     errcode = result.get('errcode')
     if errcode:
@@ -167,18 +205,29 @@ def exchange_code_for_session(code: str) -> dict[str, Any]:
     if not openid:
         raise RuntimeError('微信登录未返回 openid')
 
-    user_id = openid
-    upsert_user(
-        user_id=user_id,
+    # 使用 MySQL 版本的 upsert_user
+    from mysql_storage import upsert_user_mysql, get_user_profile_mysql
+    user_info = upsert_user_mysql(
         openid=openid,
         session_key=result.get('session_key'),
         unionid=result.get('unionid'),
     )
 
+    # 获取用户资料
+    user_id = user_info['id']
+    profile = get_user_profile_mysql(user_id) or {}
+
     return {
         'userId': user_id,
+        'userCode': user_info['userCode'],
         'openid': openid,
         'unionid': result.get('unionid'),
+        'profile': {
+            'nickname': profile.get('nickname'),
+            'avatarUrl': profile.get('avatarUrl'),
+            'gender': profile.get('gender'),
+            'birthday': profile.get('birthday'),
+        }
     }
 
 

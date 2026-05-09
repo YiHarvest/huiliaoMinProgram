@@ -40,12 +40,6 @@
         "selectedIconPath": "assets/icons/home-active.png"
       },
       {
-        "pagePath": "pages/personal-data/index",
-        "text": "个人数据",
-        "iconPath": "assets/icons/personal-data.png",
-        "selectedIconPath": "assets/icons/personal-data-active.png"
-      },
-      {
         "pagePath": "pages/ai-assistant/index",
         "text": "智能助手",
         "iconPath": "assets/icons/assistant-ai.png",

@@ -413,14 +413,335 @@ def list_subscription_records_mysql(openid: str) -> list[dict[str, Any]]:
             ]
 
 # 用户相关操作
-def upsert_user_mysql(*args, **kwargs):
+def upsert_user_mysql(
+    *,
+    user_id: Optional[str] = None,
+    openid: str,
+    session_key: Optional[str] = None,
+    unionid: Optional[str] = None
+) -> dict[str, Any]:
+    """
+    插入或更新用户
+    返回用户信息（包含 id, user_code）
+    """
     try:
         with get_mysql_connection() as connection:
             with get_mysql_cursor(connection) as cursor:
-                # 简化实现，实际项目中需要根据具体表结构调整
-                pass
+                # 先检查是否已存在
+                cursor.execute('''
+                    SELECT id, user_code FROM users WHERE openid = %s
+                ''', (openid,))
+                existing = cursor.fetchone()
+                
+                if existing:
+                    # 更新现有用户
+                    user_id_int, user_code = existing
+                    cursor.execute('''
+                        UPDATE users 
+                        SET session_key = %s, unionid = %s, updated_at = NOW()
+                        WHERE id = %s
+                    ''', (session_key, unionid, user_id_int))
+                else:
+                    # 生成 user_code
+                    import random
+                    import string
+                    user_code = 'HL' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+                    
+                    # 插入新用户
+                    cursor.execute('''
+                        INSERT INTO users (openid, user_code, session_key, unionid)
+                        VALUES (%s, %s, %s, %s)
+                    ''', (openid, user_code, session_key, unionid))
+                    user_id_int = cursor.lastrowid
+                
+                connection.commit()
+                
+                # 获取完整用户信息
+                cursor.execute('''
+                    SELECT id, openid, user_code, session_key, unionid, created_at, updated_at
+                    FROM users WHERE id = %s
+                ''', (user_id_int,))
+                row = cursor.fetchone()
+                
+                return {
+                    'id': row[0],
+                    'openid': row[1],
+                    'userCode': row[2],
+                    'sessionKey': row[3],
+                    'unionid': row[4],
+                    'createdAt': row[5],
+                    'updatedAt': row[6]
+                }
     except Exception as e:
-        print(f'upsert_user_mysql 失败（非致命错误）: {e}')
+        print(f'upsert_user_mysql 失败: {e}')
+        raise
+
+def get_user_by_openid_mysql(openid: str) -> Optional[dict[str, Any]]:
+    """
+    根据 openid 获取用户信息
+    """
+    try:
+        with get_mysql_connection() as connection:
+            with get_mysql_cursor(connection) as cursor:
+                cursor.execute('''
+                    SELECT id, openid, user_code, session_key, unionid, created_at, updated_at
+                    FROM users WHERE openid = %s
+                ''', (openid,))
+                row = cursor.fetchone()
+                
+                if row:
+                    return {
+                        'id': row[0],
+                        'openid': row[1],
+                        'userCode': row[2],
+                        'sessionKey': row[3],
+                        'unionid': row[4],
+                        'createdAt': row[5],
+                        'updatedAt': row[6]
+                    }
+                return None
+    except Exception as e:
+        print(f'get_user_by_openid_mysql 失败: {e}')
+        return None
+
+def get_user_by_user_code_mysql(user_code: str) -> Optional[dict[str, Any]]:
+    """
+    根据 user_code 获取用户信息
+    """
+    try:
+        with get_mysql_connection() as connection:
+            with get_mysql_cursor(connection) as cursor:
+                cursor.execute('''
+                    SELECT id, openid, user_code, session_key, unionid, created_at, updated_at
+                    FROM users WHERE user_code = %s
+                ''', (user_code,))
+                row = cursor.fetchone()
+                
+                if row:
+                    return {
+                        'id': row[0],
+                        'openid': row[1],
+                        'userCode': row[2],
+                        'sessionKey': row[3],
+                        'unionid': row[4],
+                        'createdAt': row[5],
+                        'updatedAt': row[6]
+                    }
+                return None
+    except Exception as e:
+        print(f'get_user_by_user_code_mysql 失败: {e}')
+        return None
+
+def get_user_profile_mysql(user_id: int) -> Optional[dict[str, Any]]:
+    """
+    根据用户ID获取用户资料
+    """
+    try:
+        with get_mysql_connection() as connection:
+            with get_mysql_cursor(connection) as cursor:
+                cursor.execute('''
+                    SELECT id, user_id, nickname, avatar_url, gender, birthday, created_at, updated_at
+                    FROM user_profiles WHERE user_id = %s
+                ''', (user_id,))
+                row = cursor.fetchone()
+                
+                if row:
+                    return {
+                        'id': row[0],
+                        'userId': row[1],
+                        'nickname': row[2],
+                        'avatarUrl': row[3],
+                        'gender': row[4],
+                        'birthday': str(row[5]) if row[5] else None,
+                        'createdAt': str(row[6]) if row[6] else None,
+                        'updatedAt': str(row[7]) if row[7] else None
+                    }
+                return None
+    except Exception as e:
+        print(f'get_user_profile_mysql 失败: {e}')
+        return None
+
+def upsert_user_profile_mysql(
+    *,
+    user_id: int,
+    nickname: Optional[str] = None,
+    avatar_url: Optional[str] = None,
+    gender: Optional[str] = None,
+    birthday: Optional[str] = None
+) -> dict[str, Any]:
+    """
+    插入或更新用户资料
+    返回更新后的资料
+    """
+    try:
+        with get_mysql_connection() as connection:
+            with get_mysql_cursor(connection) as cursor:
+                # 先检查是否已存在
+                cursor.execute('''
+                    SELECT id FROM user_profiles WHERE user_id = %s
+                ''', (user_id,))
+                existing = cursor.fetchone()
+                
+                if existing:
+                    # 更新现有资料
+                    cursor.execute('''
+                        UPDATE user_profiles 
+                        SET nickname = COALESCE(%s, nickname),
+                            avatar_url = COALESCE(%s, avatar_url),
+                            gender = COALESCE(%s, gender),
+                            birthday = COALESCE(%s, birthday),
+                            updated_at = NOW()
+                        WHERE user_id = %s
+                    ''', (nickname, avatar_url, gender, birthday, user_id))
+                else:
+                    # 插入新资料
+                    cursor.execute('''
+                        INSERT INTO user_profiles (user_id, nickname, avatar_url, gender, birthday)
+                        VALUES (%s, %s, %s, %s, %s)
+                    ''', (user_id, nickname, avatar_url, gender or 'unknown', birthday))
+                
+                connection.commit()
+                
+                # 返回更新后的资料
+                return get_user_profile_mysql(user_id) or {}
+    except Exception as e:
+        print(f'upsert_user_profile_mysql 失败: {e}')
+        raise
+
+# 用户敏感信息相关操作
+
+def mask_phone(phone: str) -> str:
+    """
+    手机号脱敏处理
+    13812345678 -> 138****5678
+    """
+    if not phone or len(phone) != 11:
+        return ''
+    return phone[:3] + '****' + phone[-4:]
+
+
+def mask_id_card(id_card: str) -> str:
+    """
+    身份证号脱敏处理
+    410101199001011234 -> 410***********1234
+    """
+    if not id_card or len(id_card) != 18:
+        return ''
+    return id_card[:3] + '***********' + id_card[-4:]
+
+
+def validate_phone(phone: str) -> bool:
+    """
+    校验中国大陆手机号
+    格式：1开头的11位数字
+    """
+    if not phone:
+        return True  # 允许为空
+    import re
+    return re.match(r'^1[3-9]\d{9}$', phone) is not None
+
+
+def validate_id_card(id_card: str) -> bool:
+    """
+    校验18位身份证号
+    最后一位可以是数字或X（统一转大写）
+    """
+    if not id_card:
+        return True  # 允许为空
+    id_card = id_card.upper()
+    import re
+    return re.match(r'^[1-9]\d{5}(19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\d{3}[\dX]$', id_card) is not None
+
+
+def get_user_sensitive_info_mysql(user_id: int) -> Optional[dict[str, Any]]:
+    """
+    根据用户ID获取敏感信息（只返回脱敏数据）
+    """
+    try:
+        with get_mysql_connection() as connection:
+            with get_mysql_cursor(connection) as cursor:
+                cursor.execute('''
+                    SELECT phone_masked, id_card_masked 
+                    FROM user_sensitive_info WHERE user_id = %s
+                ''', (user_id,))
+                row = cursor.fetchone()
+                
+                if row:
+                    return {
+                        'phone': row[0],  # 只返回脱敏手机号
+                        'phoneMasked': row[0],
+                        'idCardMasked': row[1]
+                    }
+                return None
+    except Exception as e:
+        print(f'get_user_sensitive_info_mysql 失败: {e}')
+        return None
+
+
+def upsert_user_sensitive_info_mysql(
+    *,
+    user_id: int,
+    phone: Optional[str] = None,
+    id_card: Optional[str] = None
+) -> dict[str, Any]:
+    """
+    插入或更新用户敏感信息
+    返回脱敏后的信息
+    """
+    # 校验手机号
+    if phone and not validate_phone(phone):
+        raise ValueError('手机号格式不正确')
+    
+    # 校验身份证号
+    if id_card:
+        id_card = id_card.upper()
+        if not validate_id_card(id_card):
+            raise ValueError('身份证号格式不正确')
+    
+    # 生成脱敏值
+    phone_masked = mask_phone(phone) if phone else None
+    id_card_masked = mask_id_card(id_card) if id_card else None
+    
+    try:
+        with get_mysql_connection() as connection:
+            with get_mysql_cursor(connection) as cursor:
+                # 先检查是否已存在
+                cursor.execute('''
+                    SELECT id FROM user_sensitive_info WHERE user_id = %s
+                ''', (user_id,))
+                existing = cursor.fetchone()
+                
+                if existing:
+                    # 更新现有记录
+                    cursor.execute('''
+                        UPDATE user_sensitive_info 
+                        SET phone = COALESCE(%s, phone),
+                            id_card = COALESCE(%s, id_card),
+                            phone_masked = COALESCE(%s, phone_masked),
+                            id_card_masked = COALESCE(%s, id_card_masked),
+                            updated_at = NOW()
+                        WHERE user_id = %s
+                    ''', (phone, id_card, phone_masked, id_card_masked, user_id))
+                else:
+                    # 插入新记录
+                    cursor.execute('''
+                        INSERT INTO user_sensitive_info (user_id, phone, id_card, phone_masked, id_card_masked)
+                        VALUES (%s, %s, %s, %s, %s)
+                    ''', (user_id, phone, id_card, phone_masked, id_card_masked))
+                
+                connection.commit()
+                
+                # 返回脱敏后的信息
+                return {
+                    'phone': phone_masked,
+                    'phoneMasked': phone_masked,
+                    'idCardMasked': id_card_masked
+                }
+    except ValueError:
+        raise
+    except Exception as e:
+        print(f'upsert_user_sensitive_info_mysql 失败: {e}')
+        raise
 
 # 订阅相关操作
 def upsert_subscription_record_mysql(*args, **kwargs):
