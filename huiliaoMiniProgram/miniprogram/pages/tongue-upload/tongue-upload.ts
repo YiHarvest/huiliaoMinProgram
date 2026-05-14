@@ -7,6 +7,7 @@ const MAX_VIDEO_DURATION = 20
 const MIN_RECORD_DURATION = 11
 const MAX_RECORD_DURATION = 19
 const MIN_VIDEO_FPS = 2
+const TONGUE_REMINDER_PROMPT_KEY = 'TONGUE_REMINDER_PROMPTED'
 
 type ImageField = 'topImage' | 'bottomImage' | 'faceImage'
 type MediaField = ImageField | 'tongueVideo'
@@ -92,6 +93,11 @@ interface UploadResponse {
   errorCode?: string
 }
 
+type UploadIdentity = {
+  userId: string | number | null
+  openid: string
+}
+
 interface ReportView {
   tongueColor: string[]
   tongueShape: string[]
@@ -148,12 +154,16 @@ function validateVideoEntry(video: VideoEntry | null): string {
   return ''
 }
 
-function uploadTongueVideo(filePath: string): Promise<UploadResponse> {
+function uploadTongueVideo(filePath: string, identity: UploadIdentity): Promise<UploadResponse> {
   return new Promise((resolve, reject) => {
     wx.uploadFile({
       url: `${TONGUE_API_BASE_URL}/api/tongue-analysis`,
       filePath,
       name: 'video',
+      formData: {
+        userId: identity.userId ? String(identity.userId) : '',
+        openid: identity.openid || ''
+      },
       timeout: 120000,
       success: (res) => {
         let data: UploadResponse
@@ -314,6 +324,29 @@ Page({
     lastLightCheckTime: 0 as number,
     lightTip: '检测中...',
     frameCount: 0 as number
+  },
+
+  getUploadIdentity(): UploadIdentity {
+    const app = getApp<IAppOption>()
+    const globalData = app.globalData || {}
+    const profile = wx.getStorageSync('USER_PROFILE')
+    const profileData = typeof profile === 'string'
+      ? (() => {
+          try {
+            return JSON.parse(profile)
+          } catch (error) {
+            return {}
+          }
+        })()
+      : (profile || {})
+
+    const userId = globalData.userId || wx.getStorageSync('USER_ID') || profileData.userId || profileData.id || null
+    const openid = globalData.userProfile?.openid || profileData.openid || ''
+
+    return {
+      userId,
+      openid
+    }
   },
 
   lightTimeoutTimer: null as ReturnType<typeof setTimeout> | null,
@@ -1015,6 +1048,12 @@ Page({
     })
   },
 
+  onOpenReminderSettings(): void {
+    wx.navigateTo({
+      url: '/pages/reminder-settings/reminder-settings'
+    })
+  },
+
   onSubmit(): void {
     if (!this.data.tongueVideo) {
       wx.showToast({
@@ -1034,7 +1073,9 @@ Page({
       tipsText: '分析中，请稍候...'
     })
 
-    uploadTongueVideo(this.data.tongueVideo.url)
+    const identity = this.getUploadIdentity()
+
+    uploadTongueVideo(this.data.tongueVideo.url, identity)
       .then((data) => {
         const report = data.report
         if (!report) {
@@ -1042,9 +1083,6 @@ Page({
         }
 
         this.setData({
-          report,
-          reportView: buildReportView(report),
-          hasReport: true,
           isSubmitting: false,
           tipsText: data.tips || '',
           buttonState: 'completed' as ButtonState
@@ -1060,6 +1098,39 @@ Page({
           title: '分析完成',
           icon: 'success'
         })
+
+        const analysisId = report.analysisId || ''
+        if (analysisId) {
+          const hasPromptedReminder = !!wx.getStorageSync(TONGUE_REMINDER_PROMPT_KEY)
+          if (!hasPromptedReminder) {
+            wx.setStorageSync(TONGUE_REMINDER_PROMPT_KEY, '1')
+            wx.showModal({
+              title: '每日提醒',
+              content: '是否开启每日舌苔拍摄提醒？',
+              confirmText: '去开启',
+              cancelText: '暂不',
+              success: (modalRes) => {
+                if (modalRes.confirm) {
+                  wx.navigateTo({
+                    url: '/pages/reminder-settings/reminder-settings'
+                  })
+                  return
+                }
+
+                wx.redirectTo({
+                  url: `/pages/tongue-detail/tongue-detail?analysisId=${encodeURIComponent(analysisId)}`
+                })
+              }
+            })
+            return
+          }
+
+          setTimeout(() => {
+            wx.redirectTo({
+              url: `/pages/tongue-detail/tongue-detail?analysisId=${encodeURIComponent(analysisId)}`
+            })
+          }, 300)
+        }
       })
       .catch((error) => {
         console.error('Upload failed:', error)

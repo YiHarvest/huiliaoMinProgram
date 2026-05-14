@@ -6,9 +6,12 @@
     "pages/ai-assistant/index",
     "pages/chen-agent/chen-agent",
     "pages/scale-form/scale-form",
+    "pages/scale-result/scale-result",
     "pages/questionnaire/questionnaire",
     "pages/tongue-upload/tongue-upload",
+    "pages/tongue-detail/tongue-detail",
     "pages/report-upload/report-upload",
+    "pages/report-detail/report-detail",
     "pages/comprehensive-report/comprehensive-report",
     "pages/mode-article/mode-article",
     "pages/experts/experts",
@@ -16,6 +19,7 @@
     "pages/mine/mine",
     "pages/profile/edit",
     "pages/contact/contact",
+    "pages/reminder-settings/reminder-settings",
     "pages/message-settings/message-settings",
     "pages/faq/faq",
     "pages/privacy/privacy",
@@ -66,5 +70,16 @@
   },
   "componentFramework": "glass-easel",
   "sitemapLocation": "sitemap.json",
-  "lazyCodeLoading": "requiredComponents"
+  "lazyCodeLoading": "requiredComponents",
+  "plugins": {
+    "WechatSI": {
+      "version": "0.3.6",
+      "provider": "wx069ba97219f66d99"
+    }
+  },
+  "permission": {
+    "scope.record": {
+      "desc": "用于语音输入，将语音识别为文字后发送给智能助手"
+    }
+  }
 }

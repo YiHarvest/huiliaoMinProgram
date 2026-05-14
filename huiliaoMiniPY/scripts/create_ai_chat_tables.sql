@@ -1,0 +1,41 @@
+CREATE TABLE IF NOT EXISTS ai_chat_sessions (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+  session_uuid CHAR(32) NOT NULL COMMENT '会话ID',
+  user_id BIGINT UNSIGNED NULL COMMENT '用户ID',
+  openid VARCHAR(64) NOT NULL COMMENT '微信openid',
+  assistant_id VARCHAR(32) NOT NULL COMMENT '助手标识',
+  llm_chat_id VARCHAR(64) NULL COMMENT '大模型侧会话ID',
+  title VARCHAR(128) NOT NULL COMMENT '会话标题',
+  preview VARCHAR(255) NULL COMMENT '最后消息预览',
+  message_count INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '消息数',
+  last_message_at DATETIME NOT NULL COMMENT '最后消息时间',
+  deleted_at DATETIME NULL COMMENT '软删除时间',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_session_uuid (session_uuid),
+  KEY idx_chat_sessions_owner (openid, deleted_at, last_message_at),
+  KEY idx_chat_sessions_user (user_id, deleted_at, last_message_at),
+  KEY idx_chat_sessions_assistant (assistant_id, deleted_at, last_message_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI 会话表';
+
+CREATE TABLE IF NOT EXISTS ai_chat_messages (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+  message_uuid CHAR(32) NOT NULL COMMENT '消息ID',
+  session_uuid CHAR(32) NOT NULL COMMENT '会话ID',
+  role ENUM('user','assistant','system') NOT NULL COMMENT '角色',
+  message_type VARCHAR(20) NOT NULL DEFAULT 'text' COMMENT '消息类型',
+  content LONGTEXT NULL COMMENT '文本内容',
+  media_url VARCHAR(512) NULL COMMENT '媒体地址',
+  file_name VARCHAR(255) NULL COMMENT '文件名',
+  file_size BIGINT UNSIGNED NULL COMMENT '文件大小',
+  extra_json JSON NULL COMMENT '扩展数据',
+  sort_no INT UNSIGNED NOT NULL COMMENT '会话内顺序',
+  llm_reply_id VARCHAR(64) NULL COMMENT 'AI 回复ID',
+  deleted_at DATETIME NULL COMMENT '软删除时间',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_message_uuid (message_uuid),
+  KEY idx_chat_messages_session_sort (session_uuid, sort_no),
+  KEY idx_chat_messages_reply_id (llm_reply_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI 会话消息表';

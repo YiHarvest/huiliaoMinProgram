@@ -43,20 +43,88 @@ Page({
     this.loadProfile()
   },
 
-  loadProfile() {
+  async loadProfile() {
     try {
-      // 使用统一的缓存 key: USER_PROFILE
+      // 先从本地缓存获取基础信息
       let stored = wx.getStorageSync('USER_PROFILE')
-      
-      // 兼容旧数据格式（字符串或对象）
       if (typeof stored === 'string') {
         stored = JSON.parse(stored || '{}')
       }
       
+      const userId = stored?.userId || stored?.id || wx.getStorageSync('USER_ID') || wx.getStorageSync('userId')
+      
+      // 如果有 userId，尝试从后端获取最新资料
+      if (userId) {
+        try {
+          wx.showLoading({ title: '加载中...', mask: false })
+          
+          const response: any = await new Promise((resolve, reject) => {
+            wx.request({
+              url: `https://miniprogram.huiliaoyiyuan.com/api/user/profile?userId=${userId}`,
+              method: 'GET',
+              success(res) { resolve(res) },
+              fail(err) { reject(err) }
+            })
+          })
+          
+          wx.hideLoading()
+          
+          if (response.statusCode === 200 && response.data && response.data.success) {
+            const serverProfile = response.data.data
+            console.log('[edit] 后端返回 profile:', serverProfile)
+            
+            // 合并服务器数据和本地缓存
+            const birthday = serverProfile.birthday || stored.birthday || ''
+            
+            // 手机号优先显示真实值，没有则显示脱敏值
+            const phone = serverProfile.phone || serverProfile.phoneMasked || stored.phone || stored.phoneMasked || ''
+            const phoneMasked = serverProfile.phoneMasked || stored.phoneMasked || ''
+            
+            // 身份证号不显示完整值，只显示脱敏值
+            const idCardMasked = serverProfile.idCardMasked || stored.idCardMasked || ''
+            
+            this.setData({
+              profile: {
+                userId: serverProfile.userId || serverProfile.id || userId,
+                userCode: serverProfile.userCode || stored.userCode || wx.getStorageSync('USER_CODE') || '',
+                avatarUrl: serverProfile.avatarUrl || stored.avatarUrl || '',
+                nickname: serverProfile.nickname || stored.nickname || '',
+                gender: serverProfile.gender || stored.gender || '',
+                birthday: birthday,
+                phone: phone,
+                phoneMasked: phoneMasked,
+                idCard: '',  // 不回显完整身份证号
+                idCardMasked: idCardMasked,
+                createdAt: serverProfile.createdAt || stored.createdAt || Date.now(),
+                updatedAt: serverProfile.updatedAt || stored.updatedAt || Date.now()
+              },
+              originalProfile: {
+                phone: phone,  // 保存原始显示值，用于判断是否修改
+                phoneMasked: phoneMasked,
+                idCardMasked: idCardMasked
+              },
+              hasChanged: false,
+              age: this.calculateAge(birthday)
+            })
+            
+            return
+          }
+        } catch (error) {
+          console.error('[edit] 从后端加载 profile 失败:', error)
+          wx.hideLoading()
+        }
+      }
+      
+      // 没有 userId 或后端请求失败，使用本地缓存
       if (stored && Object.keys(stored).length > 0) {
         const profile = stored
         const birthday = profile.birthday || ''
-        console.log('edit 页面读取 USER_PROFILE:', profile)
+        console.log('[edit] 使用本地缓存 USER_PROFILE:', profile)
+        
+        const phone = profile.phone || profile.phoneMasked || ''
+        const phoneMasked = profile.phoneMasked || ''
+        const idCardMasked = profile.idCardMasked || ''
+        
         this.setData({
           profile: {
             userId: profile.userId || profile.id || 0,
@@ -65,19 +133,22 @@ Page({
             nickname: profile.nickname || '',
             gender: profile.gender || '',
             birthday: birthday,
-            phone: profile.phone || profile.phoneMasked || '',
-            phoneMasked: profile.phoneMasked || '',
-            idCard: '',  // 不回显完整身份证号
-            idCardMasked: profile.idCardMasked || '',
+            phone: phone,
+            phoneMasked: phoneMasked,
+            idCard: '',
+            idCardMasked: idCardMasked,
             createdAt: profile.createdAt || Date.now(),
             updatedAt: profile.updatedAt || Date.now()
           },
-          originalProfile: { ...profile },
+          originalProfile: {
+            phone: phone,
+            phoneMasked: phoneMasked,
+            idCardMasked: idCardMasked
+          },
           hasChanged: false,
           age: this.calculateAge(birthday)
         })
       } else {
-        // 首次进入，使用默认值
         this.setData({
           profile: {
             userId: 0,
@@ -335,15 +406,62 @@ Page({
       wx.hideLoading()
     }
 
-    const profileData = {
+    // 构建保存数据，注意不要把脱敏值当成真实值保存
+    const currentPhone = this.data.profile.phone || ''
+    const currentIdCard = this.data.profile.idCard || ''
+    const originalPhone = this.data.originalProfile.phone || ''
+    
+    // 判断手机号是否被真正修改（不是脱敏值）
+    // 如果当前手机号和原始显示值相同且包含 *，说明是脱敏值，用户没有真正修改
+    const isPhoneModified = currentPhone !== originalPhone || !currentPhone.includes('*')
+    
+    // 判断身份证号是否被真正修改（完整18位）
+    // 身份证号输入框只允许输入数字和X，所以如果不是完整18位，说明没有真正修改
+    const isIdCardModified = currentIdCard.length === 18
+    
+    // 保存前打印旧缓存
+    const oldProfileBeforeSave = wx.getStorageSync('USER_PROFILE') || {}
+    console.log('[profile/save] 保存前 USER_PROFILE =', {
+      phone: oldProfileBeforeSave.phone,
+      phoneMasked: oldProfileBeforeSave.phoneMasked,
+      idCardMasked: oldProfileBeforeSave.idCardMasked,
+      hasPhoneMasked: !!oldProfileBeforeSave.phoneMasked,
+      hasIdCardMasked: !!oldProfileBeforeSave.idCardMasked
+    })
+    
+    const profileData: any = {
       userId: userId,
       nickname: nickname,
       gender: this.data.profile.gender || oldProfile.gender || 'unknown',
       birthday: this.data.profile.birthday || oldProfile.birthday || '',
-      avatarUrl: avatarUrl,
-      phone: this.data.profile.phone || '',
-      idCard: this.data.profile.idCard || ''
+      avatarUrl: avatarUrl
     }
+    
+    // 只有真正修改了手机号才传递
+    if (isPhoneModified && currentPhone) {
+      profileData.phone = currentPhone
+    }
+    
+    // 只有真正输入了完整18位身份证才传递
+    if (isIdCardModified) {
+      profileData.idCard = currentIdCard
+    }
+    
+    // 打印提交给后端的数据
+    console.log('[profile/save] 提交给后端 profileData =', {
+      userId: profileData.userId,
+      nickname: profileData.nickname,
+      gender: profileData.gender,
+      birthday: profileData.birthday,
+      avatarUrl: profileData.avatarUrl,
+      hasPhone: !!profileData.phone,
+      hasIdCard: !!profileData.idCard,
+      phone: profileData.phone ? '***' : undefined,
+      idCard: profileData.idCard ? '***' : undefined
+    })
+    
+    console.log('[edit] isPhoneModified:', isPhoneModified, 'currentPhone:', currentPhone)
+    console.log('[edit] isIdCardModified:', isIdCardModified, 'currentIdCard:', currentIdCard)
 
     // 敏感信息脱敏打印
     const logData = { ...profileData }
@@ -383,6 +501,11 @@ Page({
 
       console.log('后端保存返回 statusCode:', response?.statusCode)
       console.log('后端保存返回 data:', JSON.stringify(response?.data))
+      
+      // 重点打印后端返回的敏感信息字段
+      console.log('[profile/save] 后端返回 data =', response?.data)
+      console.log('[profile/save] 后端返回 phoneMasked =', response?.data?.data?.phoneMasked)
+      console.log('[profile/save] 后端返回 idCardMasked =', response?.data?.data?.idCardMasked)
 
       // 兼容处理：统一获取响应体
       const raw = response || {}
@@ -402,62 +525,163 @@ Page({
       const isSuccess = body.success !== false && statusCode >= 200 && statusCode < 300
 
       if (isSuccess) {
-        // 后端保存成功，合并更新本地缓存
-        const oldProfile = wx.getStorageSync('USER_PROFILE') || {}
+        // 保存成功后，重新从后端获取完整资料，避免后端返回值不完整
+        wx.showLoading({ title: '刷新资料...' })
         
-        // 获取脱敏后的敏感信息
-        const phone = payload.phone || payload.phoneMasked || ''
-        const phoneMasked = payload.phoneMasked || phone
-        const idCardMasked = payload.idCardMasked || ''
-        
-        const updatedProfile = {
-          ...oldProfile,
-          ...payload,
-          userId: oldProfile.userId || wx.getStorageSync('USER_ID') || userId,
-          userCode: oldProfile.userCode || wx.getStorageSync('USER_CODE') || '',
-          openid: oldProfile.openid || '',
-          unionid: oldProfile.unionid || '',
-          nickname: this.data.profile.nickname,
-          gender: this.data.profile.gender || oldProfile.gender || 'unknown',
-          birthday: this.data.profile.birthday,
-          avatarUrl: this.data.profile.avatarUrl,
-          // 敏感信息（只保存脱敏值）
-          phone: phone,
-          phoneMasked: phoneMasked,
-          idCard: '',  // 不保存完整身份证号到本地
-          idCardMasked: idCardMasked,
-          updatedAt: Date.now()
-        }
+        try {
+          const refreshResponse: any = await new Promise((resolve, reject) => {
+            wx.request({
+              url: `https://miniprogram.huiliaoyiyuan.com/api/user/profile?userId=${userId}`,
+              method: 'GET',
+              success(res) { resolve(res) },
+              fail(err) { reject(err) }
+            })
+          })
+          
+          wx.hideLoading()
+          
+          if (refreshResponse.statusCode === 200 && refreshResponse.data?.success) {
+            const serverProfile = refreshResponse.data.data
+            const oldProfile = wx.getStorageSync('USER_PROFILE') || {}
+            
+            // 合并数据：优先使用后端返回的，但保留旧值作为兜底
+            const phone = serverProfile.phone || serverProfile.phoneMasked || oldProfile.phone || oldProfile.phoneMasked || ''
+            const phoneMasked = serverProfile.phoneMasked || oldProfile.phoneMasked || ''
+            const idCardMasked = serverProfile.idCardMasked || oldProfile.idCardMasked || ''
+            
+            const updatedProfile = {
+              ...oldProfile,
+              ...serverProfile,
+              userId: serverProfile.userId || serverProfile.id || userId,
+              userCode: serverProfile.userCode || oldProfile.userCode || wx.getStorageSync('USER_CODE') || '',
+              openid: oldProfile.openid || '',
+              unionid: oldProfile.unionid || '',
+              nickname: this.data.profile.nickname,
+              gender: this.data.profile.gender || oldProfile.gender || 'unknown',
+              birthday: this.data.profile.birthday,
+              avatarUrl: this.data.profile.avatarUrl,
+              // 敏感信息处理
+              phone: phone,
+              phoneMasked: phoneMasked,
+              idCard: '',  // 不回显完整身份证号
+              idCardMasked: idCardMasked,
+              updatedAt: Date.now()
+            }
 
-        // 更新所有缓存
-        wx.setStorageSync('USER_PROFILE', updatedProfile)
-        wx.setStorageSync('USER_ID', updatedProfile.userId)
-        wx.setStorageSync('USER_CODE', updatedProfile.userCode)
-        
-        console.log('保存后的 USER_PROFILE:', wx.getStorageSync('USER_PROFILE'))
+            // 更新所有缓存
+            wx.setStorageSync('USER_PROFILE', updatedProfile)
+            wx.setStorageSync('USER_ID', updatedProfile.userId)
+            wx.setStorageSync('USER_CODE', updatedProfile.userCode)
+            
+            // 更新全局数据
+            const app = getApp<IAppOption>()
+            app.globalData.userProfile = updatedProfile
+            app.globalData.userId = updatedProfile.userId
+            app.globalData.userCode = updatedProfile.userCode
+            
+            // 打印最终写入的数据
+            console.log('[profile/save] 最终写入 USER_PROFILE =', {
+              phone: updatedProfile.phone,
+              phoneMasked: updatedProfile.phoneMasked,
+              idCardMasked: updatedProfile.idCardMasked,
+              userId: updatedProfile.userId,
+              nickname: updatedProfile.nickname
+            })
+            console.log('[profile/save] 最终写入 globalData.userProfile =', {
+              phone: app.globalData.userProfile?.phone,
+              phoneMasked: app.globalData.userProfile?.phoneMasked,
+              idCardMasked: app.globalData.userProfile?.idCardMasked,
+              userId: app.globalData.userId
+            })
+            
+            console.log('[edit] 保存后刷新资料成功:', updatedProfile)
 
-        this.setData({
-          profile: updatedProfile,
-          hasChanged: false,
-          isSaved: true
-        })
+            this.setData({
+              profile: updatedProfile,
+              originalProfile: {
+                phone: phone,
+                phoneMasked: phoneMasked,
+                idCardMasked: idCardMasked
+              },
+              hasChanged: false,
+              isSaved: true
+            })
 
-        const pages = getCurrentPages()
-        const prevPage: any = pages[pages.length - 2]
+            // 更新上一页数据（通过 eventChannel + 方法调用双重保障）
+            const pages = getCurrentPages()
+            const prevPage: any = pages[pages.length - 2]
+            
+            // 方式1：通过 eventChannel 通知（推荐）
+            try {
+              const eventChannel = this.getOpenerEventChannel()
+              if (eventChannel && typeof eventChannel.emit === 'function') {
+                eventChannel.emit('profileUpdated', updatedProfile)
+                console.log('[edit] 已通过 eventChannel 发送 profileUpdated 事件')
+              }
+            } catch (e) {
+              console.warn('[edit] eventChannel emit 失败:', e)
+            }
+            
+            // 方式2：直接调用上一页方法（兼容旧逻辑）
+            if (prevPage && typeof prevPage.loadUserProfile === 'function') {
+              prevPage.loadUserProfile()
+              console.log('[edit] 已调用 prevPage.loadUserProfile()')
+            } else if (prevPage) {
+              prevPage.setData({
+                profile: updatedProfile
+              })
+              console.log('[edit] 已通过 setData 更新上一页')
+            }
 
-        if (prevPage && typeof prevPage.loadProfile === 'function') {
-          prevPage.loadProfile()
-        } else if (prevPage) {
-          prevPage.setData({
-            profile: updatedProfile
+            wx.hideLoading()
+            wx.showToast({
+              title: '保存成功',
+              icon: 'success'
+            })
+          } else {
+            // 刷新失败，使用本地数据
+            console.warn('[edit] 刷新资料失败，使用本地数据')
+            const oldProfile = wx.getStorageSync('USER_PROFILE') || {}
+            
+            // 更新上一页数据
+            const pages = getCurrentPages()
+            const prevPage: any = pages[pages.length - 2]
+            if (prevPage && typeof prevPage.loadProfile === 'function') {
+              prevPage.loadProfile()
+            }
+
+            this.setData({
+              hasChanged: false,
+              isSaved: true
+            })
+
+            wx.hideLoading()
+            wx.showToast({
+              title: '保存成功',
+              icon: 'success'
+            })
+          }
+        } catch (refreshError) {
+          wx.hideLoading()
+          console.error('[edit] 刷新资料失败:', refreshError)
+          
+          // 更新上一页数据
+          const pages = getCurrentPages()
+          const prevPage: any = pages[pages.length - 2]
+          if (prevPage && typeof prevPage.loadProfile === 'function') {
+            prevPage.loadProfile()
+          }
+
+          this.setData({
+            hasChanged: false,
+            isSaved: true
+          })
+
+          wx.showToast({
+            title: '保存成功',
+            icon: 'success'
           })
         }
-
-        wx.hideLoading()
-        wx.showToast({
-          title: '保存成功',
-          icon: 'success'
-        })
 
         setTimeout(() => {
           wx.navigateBack()

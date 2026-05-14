@@ -1,0 +1,63 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="state state-loading">
+    <view class="spinner"></view>
+    <text class="state-text">正在加载...</text>
+  </view>
+
+  <view wx:elif="{{error}}" class="state state-error">
+    <text class="state-title">加载失败</text>
+    <text class="state-text">{{errorMsg}}</text>
+    <button class="retry-btn" bindtap="loadData">重新加载</button>
+  </view>
+
+  <scroll-view wx:else class="content" scroll-y>
+    <view class="info-card">
+      <view class="info-header">
+        <text class="info-badge">量表分析结果</text>
+        <text class="info-title">{{title || questionnaireName || '量表分析结果'}}</text>
+      </view>
+
+      <view class="info-meta">
+        <view class="meta-item" wx:if="{{doctorName}}">
+          <text class="meta-label">医生</text>
+          <text class="meta-value">{{doctorName}}</text>
+        </view>
+        <view class="meta-item" wx:if="{{completedAt}}">
+          <text class="meta-label">填写时间</text>
+          <text class="meta-value">{{completedAt}}</text>
+        </view>
+        <view class="meta-item" wx:if="{{updatedAt}}">
+          <text class="meta-label">更新时间</text>
+          <text class="meta-value">{{updatedAt}}</text>
+        </view>
+        <view class="meta-item">
+          <text class="meta-label">状态</text>
+          <text class="meta-value status-completed">已填写</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="section-card analysis-card">
+      <text class="section-card-title">结果分析</text>
+      <view class="analysis-content">
+        <block wx:if="{{analysisBlocks && analysisBlocks.length}}">
+          <view
+            wx:for="{{analysisBlocks}}"
+            wx:key="index"
+            class="analysis-block {{item.type === 'title' ? 'analysis-block--title' : 'analysis-block--paragraph'}}"
+          >
+            <text>{{item.text}}</text>
+          </view>
+        </block>
+        <text wx:else class="analysis-text">{{analysisText || '量表已填写完成，医生可结合您的病情描述和量表结果进一步查看。'}}</text>
+      </view>
+    </view>
+
+    <view class="section-card tip-card">
+      <text class="section-card-title">提示</text>
+      <view class="tip-content">
+        <text class="tip-text">以下内容仅供医生参考，不构成诊断依据。</text>
+      </view>
+    </view>
+  </scroll-view>
+</view>

@@ -1,6 +1,6 @@
 import { getSubscribeConfig, handleSubscribeAuthorization, showSubscribeGuide } from '../../utils/subscribe'
 
-type SubscribeScene = 'ai_reply' | 'tongue_result' | 'appointment_reminder'
+type SubscribeScene = 'ai_reply' | 'tongue_result' | 'appointment_reminder' | 'tongue_reminder'
 
 type SubscribeConfig = {
   scene: SubscribeScene

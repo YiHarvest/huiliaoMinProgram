@@ -22,7 +22,19 @@ def load_config():
             "server": {
                 "host": "127.0.0.1",
                 "port": 8020
-            }
+            },
+            "siliconflow": {
+                "enabled": False,
+                "base_url": "https://api.siliconflow.cn/v1",
+                "chat_completions_path": "/chat/completions",
+                "api_key": "",
+                "model": "deepseek-ai/DeepSeek-V4-Flash",
+                "temperature": 0.3,
+                "max_tokens": 1800,
+                "timeout_seconds": 60
+            },
+            "tongueReminderTemplateId": "",
+            "wechat_mini_program_state": "developer"
         }
 
     return config_data

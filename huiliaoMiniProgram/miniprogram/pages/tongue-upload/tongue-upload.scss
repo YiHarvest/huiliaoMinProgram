@@ -656,6 +656,48 @@ scroll-view {
   box-shadow: none;
 }
 
+.subscribe-card {
+  margin-top: 24rpx;
+}
+
+.subscribe-card-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.subscribe-card-title {
+  display: block;
+  font-size: 30rpx;
+  line-height: 42rpx;
+  font-weight: 700;
+  color: #20413d;
+}
+
+.subscribe-card-desc {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  line-height: 32rpx;
+  color: #7d8e8a;
+}
+
+.subscribe-card-action {
+  flex-shrink: 0;
+  min-width: 132rpx;
+  height: 64rpx;
+  padding: 0 20rpx;
+  border-radius: 999rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0b8f7d 0%, #076d60 100%);
+  color: #ffffff;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
 .subscribe-row {
   margin-top: 12rpx;
 }

@@ -1,0 +1,208 @@
+.reminder-settings {
+  min-height: 100vh;
+  padding: 28rpx 24rpx calc(env(safe-area-inset-bottom) + 40rpx);
+  background: linear-gradient(180deg, #f3fbfa 0%, #ffffff 100%);
+  box-sizing: border-box;
+}
+
+.hero {
+  padding: 8rpx 4rpx 24rpx;
+}
+
+.hero-title {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #1f3633;
+}
+
+.hero-desc {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  line-height: 36rpx;
+  color: #7f8f8b;
+}
+
+.card {
+  padding: 28rpx;
+  border-radius: 28rpx;
+  background: #ffffff;
+  border: 1rpx solid rgba(221, 233, 229, 0.9);
+  box-shadow: 0 12rpx 28rpx rgba(13, 60, 49, 0.06);
+}
+
+.card-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.label {
+  display: block;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #243b39;
+}
+
+.desc {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  line-height: 36rpx;
+  color: #7c8d89;
+}
+
+.status {
+  flex-shrink: 0;
+  min-width: 120rpx;
+  padding: 10rpx 16rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  text-align: center;
+}
+
+.status-on {
+  background: #e7fbf4;
+  color: #0b8f7d;
+}
+
+.status-off {
+  background: #f3f5f6;
+  color: #7f8f8b;
+}
+
+.config-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 0;
+  margin-top: 16rpx;
+  border-top: 1rpx solid #f0f4f2;
+}
+
+.config-label-text {
+  font-size: 28rpx;
+  color: #334441;
+  font-weight: 600;
+}
+
+.config-value {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  font-size: 28rpx;
+  color: #0b8f7d;
+  font-weight: 600;
+}
+
+.arrow {
+  font-size: 24rpx;
+  color: #a0b0ac;
+}
+
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18rpx;
+  margin-top: 24rpx;
+}
+
+.meta-item {
+  padding: 18rpx 20rpx;
+  border-radius: 20rpx;
+  background: #f8fbfa;
+}
+
+.meta-label {
+  display: block;
+  font-size: 22rpx;
+  color: #8b9a97;
+}
+
+.meta-value {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 28rpx;
+  color: #203633;
+  font-weight: 600;
+}
+
+.notice {
+  margin-top: 24rpx;
+  padding: 20rpx;
+  border-radius: 22rpx;
+  background: #fffaf1;
+  border: 1rpx solid rgba(247, 205, 127, 0.35);
+}
+
+.notice-title {
+  display: block;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #aa7718;
+}
+
+.notice-text {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  line-height: 34rpx;
+  color: #8a6318;
+}
+
+/* 按钮区域容器 */
+.action-area {
+  margin-top: 48rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24rpx;
+  padding-bottom: calc(48rpx + env(safe-area-inset-bottom));
+}
+
+/* 统一按钮基础样式（去除微信默认样式） */
+.action-btn {
+  width: 360rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  border-radius: 44rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  text-align: center;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  border: none;
+}
+
+/* 去除微信默认边框 */
+.action-btn::after {
+  border: none;
+}
+
+/* 主操作按钮：绿色实心 + 阴影（最突出） */
+.action-btn.primary-btn {
+  background: #12b89f;
+  color: #ffffff;
+  box-shadow: 0 12rpx 24rpx rgba(18, 184, 159, 0.18);
+  font-weight: 700;
+}
+
+/* 次操作按钮：白底描边（弱化） */
+.action-btn.secondary-btn {
+  background: #ffffff;
+  color: #12a892;
+  border: 2rpx solid rgba(18, 184, 159, 0.22);
+}
+
+.loading {
+  text-align: center;
+  padding: 80rpx 0;
+}
+
+.loading-text {
+  color: #90a09c;
+  font-size: 26rpx;
+}

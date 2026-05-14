@@ -9,7 +9,6 @@ type QuestionnaireQuestion = {
   isRequired?: boolean
   type?: string
   options: QuestionnaireOption[]
-  answerValue?: string
 }
 
 function normalizeAnswerValue(rawValue: unknown) {
@@ -50,34 +49,56 @@ function buildInitialAnswers(questions: QuestionnaireQuestion[]) {
   const initialAnswers: Record<string, string> = {}
 
   questions.forEach((question) => {
-    initialAnswers[question.subjectId] = question.answerValue || ''
+    initialAnswers[question.subjectId] = ''
   })
 
   return initialAnswers
 }
 
-function countAnsweredQuestions(answers: Record<string, string>) {
-  return Object.values(answers).filter((value) => value !== '').length
+function hasAnswer(value: unknown) {
+  return String(value ?? '').trim() !== ''
 }
 
-function calcProgressPercent(answeredCount: number, totalCount: number) {
+function countAnsweredQuestions(answers: Record<string, string>) {
+  return Object.values(answers).filter((value) => hasAnswer(value)).length
+}
+
+function calcProgressPercent(currentIndex: number, totalCount: number) {
   if (!totalCount) {
     return 0
   }
 
-  return Math.round((answeredCount / totalCount) * 100)
+  return Math.round(((currentIndex + 1) / totalCount) * 100)
+}
+
+function getCurrentUserId(): number | null {
+  const app = getApp<IAppOption>()
+  const globalUserId = app?.globalData?.userId
+  const storageUserId = wx.getStorageSync('USER_ID')
+  const rawUserId = globalUserId || storageUserId
+  const parsedUserId = Number(rawUserId)
+  return Number.isFinite(parsedUserId) && parsedUserId > 0 ? parsedUserId : null
 }
 
 Page({
   data: {
     recordId: '',
     templateId: '',
+    questionnaireId: '',
+    doctorId: '',
+    patientId: '',
+    doctorName: '',
+    diseaseType: '',
+    diseaseName: '',
+    visitType: '',
+    visitTypeLabel: '',
     questionnaireName: '',
     description: '',
     questions: [] as QuestionnaireQuestion[],
-    answers: {} as Record<string, string>,
-    totalCount: 0,
+    currentQuestionIndex: 0,
+    currentQuestion: null as QuestionnaireQuestion | null,
     totalQuestions: 0,
+    answers: {} as Record<string, string>,
     answeredCount: 0,
     progressPercent: 0,
     loading: true,
@@ -85,20 +106,48 @@ Page({
     questionnaireStatus: '',
     isRefilling: false
   },
-  onLoad(options: { recordId?: string }) {
-    console.log('questionnaire onLoad options', options)
-    console.log('questionnaire onLoad recordId', options && options.recordId)
-    console.log('questionnaire current route', getCurrentPages().map(p => p.route))
+  onLoad(options: {
+    recordId?: string
+    doctorId?: string
+    patientId?: string
+    questionnaireId?: string
+    doctorName?: string
+    diseaseType?: string
+    diseaseName?: string
+    visitType?: string
+    visitTypeLabel?: string
+  }) {
     if (options && options.recordId) {
+      console.log('[questionnaire-onLoad] questionnaireId =', options.questionnaireId)
       this.setData({
-        recordId: options.recordId
+        recordId: options.recordId,
+        templateId: '',
+        questionnaireId: options.questionnaireId || '',
+        doctorId: options.doctorId || '',
+        patientId: options.patientId || '',
+        doctorName: options.doctorName ? decodeURIComponent(options.doctorName) : '',
+        diseaseType: options.diseaseType ? decodeURIComponent(options.diseaseType) : '',
+        diseaseName: options.diseaseName ? decodeURIComponent(options.diseaseName) : '',
+        visitType: options.visitType ? decodeURIComponent(options.visitType) : '',
+        visitTypeLabel: options.visitTypeLabel ? decodeURIComponent(options.visitTypeLabel) : ''
       })
       this.loadQuestionnaire()
     }
   },
+  setCurrentQuestion(questions: QuestionnaireQuestion[], nextIndex: number) {
+    const safeIndex = Math.max(0, Math.min(nextIndex, Math.max(questions.length - 1, 0)))
+    const currentQuestion = questions[safeIndex] || null
+
+    this.setData({
+      currentQuestionIndex: safeIndex,
+      currentQuestion,
+      progressPercent: calcProgressPercent(safeIndex, questions.length)
+    })
+  },
   async loadQuestionnaire() {
     const { recordId } = this.data
     wx.showLoading({ title: '加载中...' })
+
     try {
       const response = await new Promise<WechatMiniprogram.RequestSuccessCallbackResult>((resolve, reject) => {
         wx.request({
@@ -108,62 +157,60 @@ Page({
           fail: reject
         })
       })
-      
+
       if (response.statusCode === 200 && response.data) {
         const data = response.data as any
-        console.log('detail response', data)
-        console.log('detail response questions', data && data.questions)
-        
         const responseData = data || {}
         const questionsArray = Array.isArray(responseData.questions) ? responseData.questions : []
-        console.log('questionsArray', questionsArray)
 
-        const questions = questionsArray.map((item: any, questionIndex: number) => ({
-          subjectId: String(item.id || item.subjectId || ''),
-          title: item.title || '',
+        const questions = questionsArray.map((item: any) => ({
+          subjectId: String(item.id || item.subjectId || item.questionId || ''),
+          title: item.title || item.questionText || '',
           type: item.type,
+          isRequired: Boolean(item.isRequired),
           options: Array.isArray(item.options)
             ? item.options.map((option: any, optionIndex: number) => ({
-                value: String(option.value !== undefined && option.value !== null ? option.value : (option.id !== undefined && option.id !== null ? option.id : optionIndex + 1)),
-                label: String(option.label !== undefined && option.label !== null ? option.label : (option.title !== undefined && option.title !== null ? option.title : (option.text !== undefined && option.text !== null ? option.text : '')))
+                value: String(
+                  option.value !== undefined && option.value !== null
+                    ? option.value
+                    : option.id !== undefined && option.id !== null
+                      ? option.id
+                      : optionIndex + 1
+                ),
+                label: String(
+                  option.label !== undefined && option.label !== null
+                    ? option.label
+                    : option.title !== undefined && option.title !== null
+                      ? option.title
+                      : option.text !== undefined && option.text !== null
+                        ? option.text
+                        : ''
+                )
               }))
             : []
         }))
-        console.log('mapped questions', questions)
-        console.log('first question options', questions[0] && questions[0].options)
-        // 打印第三题的完整对象
-        if (questions.length >= 3) {
-          console.log('=== 第三题完整对象 ===')
-          console.log('title:', questions[2].title)
-          console.log('type:', questions[2].type)
-          console.log('options:', questions[2].options)
-          console.log('isRequired:', questions[2].isRequired)
-          console.log('subjectId:', questions[2].subjectId)
-          console.log('=====================')
-        }
 
         const totalQuestions = questions.length
         const submitted = responseData.status === 'completed'
-        const initialAnswers = buildInitialAnswers(questions)
-        const answeredCount = countAnsweredQuestions(initialAnswers)
-        const progressPercent = calcProgressPercent(answeredCount, totalQuestions)
-        
+        const questionnaireId = this.data.questionnaireId || String(responseData.questionnaireId || '')
+
         this.setData({
           recordId: String(responseData.recordId || recordId),
           templateId: String(responseData.templateId || ''),
+          questionnaireId,
           questionnaireName: responseData.questionnaireName || '',
           description: responseData.description || '',
           questions,
-          answers: initialAnswers,
-          totalCount: totalQuestions,
-          totalQuestions: totalQuestions,
-          answeredCount,
-          progressPercent,
-          loading: false,
+          totalQuestions,
+          answers: buildInitialAnswers(questions),
+          answeredCount: 0,
           submitted,
           questionnaireStatus: responseData.status || '',
-          isRefilling: false
+          isRefilling: false,
+          loading: false
         })
+
+        this.setCurrentQuestion(questions, 0)
       } else {
         wx.showToast({ title: '加载失败', icon: 'none' })
         this.setData({ loading: false })
@@ -178,105 +225,141 @@ Page({
   handleOptionChange(e: WechatMiniprogram.CustomEvent) {
     const subjectId = String(e.currentTarget.dataset.subjectId || '')
     const value = String(e.detail.value || '')
-    console.log('answer change subjectId', subjectId)
-    console.log('answer change value', value)
-    
+
     const nextAnswers = {
       ...this.data.answers,
       [subjectId]: value
     }
-    
-    const answeredCount = Object.values(nextAnswers).filter(v => String(v).trim() !== '').length
-    const totalQuestions = this.data.totalQuestions
-    const progressPercent = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0
-    
-    console.log('answers', nextAnswers)
-    console.log('answeredCount', answeredCount, 'totalQuestions', totalQuestions, 'progressPercent', progressPercent)
-    
+
+    const answeredCount = countAnsweredQuestions(nextAnswers)
+
     this.setData({
       answers: nextAnswers,
-      answeredCount,
-      progressPercent
+      answeredCount
     })
   },
   handleTextInput(e: WechatMiniprogram.CustomEvent) {
     const subjectId = String(e.currentTarget.dataset.subjectId || '')
     const value = String(e.detail.value || '')
-    console.log('text input subjectId', subjectId)
-    console.log('text input value', value)
-    
+
     const nextAnswers = {
       ...this.data.answers,
       [subjectId]: value
     }
-    
-    const answeredCount = Object.values(nextAnswers).filter(v => String(v).trim() !== '').length
-    const totalQuestions = this.data.totalQuestions
-    const progressPercent = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0
-    
-    console.log('answers', nextAnswers)
-    console.log('answeredCount', answeredCount, 'totalQuestions', totalQuestions, 'progressPercent', progressPercent)
-    
+
+    const answeredCount = countAnsweredQuestions(nextAnswers)
+
     this.setData({
       answers: nextAnswers,
-      answeredCount,
-      progressPercent
+      answeredCount
     })
   },
   startRefillQuestionnaire() {
-    const answeredCount = countAnsweredQuestions(this.data.answers)
-    const totalQuestions = this.data.totalQuestions
-    const progressPercent = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0
+    const { questions } = this.data
 
     this.setData({
       isRefilling: true,
-      answeredCount,
-      progressPercent
+      answers: buildInitialAnswers(questions),
+      answeredCount: 0
+    })
+
+    this.setCurrentQuestion(questions, 0)
+  },
+  goPrev() {
+    const { currentQuestionIndex, questions } = this.data
+
+    if (currentQuestionIndex <= 0) {
+      return
+    }
+
+    const newIndex = currentQuestionIndex - 1
+
+    this.setCurrentQuestion(questions, newIndex)
+
+    wx.pageScrollTo({
+      scrollTop: 0,
+      duration: 200
+    })
+  },
+  goNext() {
+    const { currentQuestionIndex, questions, answers, currentQuestion } = this.data
+
+    if (!currentQuestion) {
+      return
+    }
+
+    const questionId = currentQuestion.subjectId
+    const currentAnswer = answers[questionId]
+
+    if (!hasAnswer(currentAnswer)) {
+      wx.showToast({
+        title: '请先选择答案',
+        icon: 'none'
+      })
+      return
+    }
+
+    if (currentQuestionIndex >= questions.length - 1) {
+      return
+    }
+
+    const newIndex = currentQuestionIndex + 1
+
+    this.setCurrentQuestion(questions, newIndex)
+
+    wx.pageScrollTo({
+      scrollTop: 0,
+      duration: 200
     })
   },
   async submitQuestionnaire() {
-    const { recordId, answers, questions, totalQuestions } = this.data
+    const { recordId, answers, questions, totalQuestions, doctorId, patientId, questionnaireId, diseaseType, visitType } = this.data
 
-    // 验证必填项
-    const requiredQuestions = questions.filter((q: QuestionnaireQuestion) => q.isRequired)
-    const missingRequired = requiredQuestions.some((q: QuestionnaireQuestion) => !answers[q.subjectId])
-    if (missingRequired) {
-      wx.showToast({ title: '请完成所有必填题目', icon: 'none' })
+    const incompleteQuestion = questions.find((question: QuestionnaireQuestion) => !hasAnswer(answers[question.subjectId]))
+    if (incompleteQuestion) {
+      wx.showToast({ title: '还有题目未填写', icon: 'none' })
       return
     }
-    
-    // 构建答案数组
+
     const answersArray = Object.entries(answers).map(([subjectId, value]) => ({
       subjectId: String(subjectId),
       value: String(value)
     }))
-    
-    // 调试日志
-    console.log('=== 前端提交调试信息 ===')
-    console.log('recordId:', recordId)
-    console.log('typeof recordId:', typeof recordId)
-    console.log('answers:', answers)
-    console.log('answersArray:', answersArray)
-    console.log('typeof first subjectId:', typeof (answersArray[0] && answersArray[0].subjectId))
-    
-    const payload = {
+
+    const payload: Record<string, any> = {
       recordId: String(recordId),
-      answers: answersArray
+      questionnaireId: String(questionnaireId || ''),
+      answers: answersArray,
+      diseaseType: String(diseaseType || ''),
+      visitType: String(visitType || '')
     }
-    console.log('最终请求体 JSON:', JSON.stringify(payload, null, 2))
-    
-    wx.showLoading({ title: '提交中...' })
+
+    const resolvedDoctorId = String(doctorId || '').trim()
+    const resolvedPatientId = String(patientId || '').trim() || String(getCurrentUserId() || '')
+    if (resolvedDoctorId && resolvedDoctorId !== '0') {
+      payload.doctorId = resolvedDoctorId
+    }
+    if (resolvedPatientId && resolvedPatientId !== '0') {
+      payload.patientId = resolvedPatientId
+    }
+
+    console.log('[questionnaire-submit] payload =', payload)
+
+    wx.showLoading({ title: '保存中...' })
     try {
       const response = await new Promise<WechatMiniprogram.RequestSuccessCallbackResult>((resolve, reject) => {
         wx.request({
           url: 'https://miniprogram.huiliaoyiyuan.com/api/questionnaires/submit',
           method: 'POST',
+          header: {
+            'Content-Type': 'application/json'
+          },
           data: payload,
           success: resolve,
           fail: reject
         })
       })
-      
+
       if (response.statusCode === 200 && response.data) {
         const responseData = response.data as any
         if (responseData.success) {
@@ -288,16 +371,16 @@ Page({
             progressPercent: totalQuestions > 0 ? 100 : 0
           })
 
-          wx.showToast({ 
-            title: '提交成功', 
+          wx.showToast({
+            title: '保存成功',
             icon: 'success',
-            duration: 2000
+            duration: 1500
           })
         } else {
-          wx.showToast({ title: '提交失败', icon: 'none' })
+          wx.showToast({ title: '保存失败', icon: 'none' })
         }
       } else {
-        wx.showToast({ title: '提交失败', icon: 'none' })
+        wx.showToast({ title: '保存失败', icon: 'none' })
       }
     } catch (error) {
       wx.showToast({ title: '网络错误', icon: 'none' })

@@ -2,26 +2,24 @@
   <scroll-view class="page-scroll" scroll-y enable-flex="true">
     <view class="content">
       <view class="section-card">
-        <view class="card-head">
-          <view class="card-title-row">
-            <text class="card-title">医生信息</text>
-            <text class="field-tag field-tag-required">必填</text>
-          </view>
+        <view class="section-title-row">
+          <text class="section-title">医生信息</text>
+          <text class="section-badge section-badge-required">必填</text>
         </view>
 
-        <view class="doctor-selector" bindtap="onChooseDoctor" hover-class="doctor-selector-hover" hover-stay-time="80">
-          <view class="doctor-content" wx:if="{{selectedDoctor}}">
-            <text class="doctor-name">{{selectedDoctor.name}}</text>
-            <text class="doctor-meta">{{selectedDoctor.department}}</text>
-            <view class="doctor-tag-row">
-              <text class="doctor-tag" wx:for="{{selectedDoctor.tags}}" wx:key="*this">{{item}}</text>
-            </view>
+        <picker
+          class="doctor-picker"
+          mode="selector"
+          range="{{doctorPickerRange}}"
+          value="{{doctorPickerIndex}}"
+          bindchange="onDoctorPickerChange"
+          disabled="{{!doctorOptions.length}}"
+        >
+          <view class="doctor-selector">
+            <text class="doctor-value {{!selectedDoctor ? 'doctor-placeholder' : ''}}">{{selectedDoctorText || '请确认医生信息'}}</text>
+            <text class="doctor-arrow">›</text>
           </view>
-          <view class="doctor-content doctor-content-placeholder" wx:else>
-            <text class="doctor-placeholder">确认医生信息</text>
-          </view>
-          <text class="doctor-arrow">></text>
-        </view>
+        </picker>
       </view>
 
       <view class="section-card">
@@ -57,6 +55,36 @@
             <text class="upload-plus">+</text>
           </view>
         </view>
+      </view>
+
+      <view class="section-card">
+        <view class="section-title-row">
+          <text class="section-title">报告类型</text>
+          <text class="section-badge section-badge-required">必填</text>
+        </view>
+
+        <view class="type-selector" bindtap="onChooseReportType">
+          <view class="type-content {{!selectedReportType ? 'type-content-placeholder' : ''}}">
+            <text>{{selectedReportType || '请选择报告类型'}}</text>
+          </view>
+          <text class="type-arrow">></text>
+        </view>
+      </view>
+
+      <view class="section-card" wx:if="{{selectedReportType === '其他' || selectedReportType}}">
+        <view class="section-title-row">
+          <text class="section-title">报告备注</text>
+          <view class="section-badge {{selectedReportType === '其他' ? 'section-badge-required' : 'section-badge-optional'}}">{{selectedReportType === '其他' ? '必填' : '选填'}}</view>
+        </view>
+
+        <textarea
+          class="remark-input"
+          placeholder="{{selectedReportType === '其他' ? '请填写具体的检查项目名称，如：精液检查、甲状腺功能等' : '可选填写，如：卵泡监测、月经第3天抽血等'}}"
+          value="{{remark}}"
+          bindinput="onRemarkInput"
+          maxlength="100"
+          auto-height
+        />
       </view>
 
       <view class="submit-spacer"></view>

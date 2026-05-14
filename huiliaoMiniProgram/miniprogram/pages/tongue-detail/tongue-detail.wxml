@@ -1,0 +1,202 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="state state-loading">
+    <view class="spinner"></view>
+    <text class="state-text">正在加载舌苔分析...</text>
+  </view>
+
+  <view wx:elif="{{error}}" class="state state-error">
+    <text class="state-title">加载失败</text>
+    <text class="state-text">{{statusText}}</text>
+    <button class="retry-btn" bindtap="retryLoad">重新加载</button>
+  </view>
+
+  <view wx:elif="{{status === 'empty'}}" class="state state-empty">
+    <text class="state-title">暂无分析结果</text>
+    <text class="state-text">{{statusText}}</text>
+  </view>
+
+  <scroll-view wx:else class="content" scroll-y>
+    <view class="hero-card">
+      <text class="hero-badge">舌苔分析报告</text>
+      <text class="hero-title">{{report.overall && report.overall.subject || '舌苔分析结果'}}</text>
+      <text class="hero-summary">{{report.overall && report.overall.summary || '暂无总体摘要'}}</text>
+
+      <view class="score-panel" wx:if="{{report.overall && report.overall.score !== undefined && report.overall.score !== null}}">
+        <text class="score-label">综合评分</text>
+        <text class="score-value">{{report.overall.score}}</text>
+        <text class="score-unit">分</text>
+      </view>
+
+      <view class="hero-meta">
+        <view class="meta-item" wx:if="{{createdAt}}">
+          <text class="meta-label">分析时间</text>
+          <text class="meta-value">{{createdAt}}</text>
+        </view>
+        <view class="meta-item" wx:if="{{updatedAt}}">
+          <text class="meta-label">更新时间</text>
+          <text class="meta-value">{{updatedAt}}</text>
+        </view>
+        <view class="meta-item" wx:if="{{report.basicInfo && report.basicInfo.sex}}">
+          <text class="meta-label">性别</text>
+          <text class="meta-value">{{report.basicInfo.sex}}</text>
+        </view>
+        <view class="meta-item" wx:if="{{report.basicInfo && report.basicInfo.age !== undefined && report.basicInfo.age !== null}}">
+          <text class="meta-label">年龄</text>
+          <text class="meta-value">{{report.basicInfo.age}}</text>
+        </view>
+        <view class="meta-item" wx:if="{{analysisId}}">
+          <text class="meta-label">分析ID</text>
+          <text class="meta-value">{{analysisId}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="section" wx:if="{{report.overall && report.overall.riskWarnings && report.overall.riskWarnings.length}}">
+      <text class="section-title">风险提示</text>
+      <view class="warning-list">
+        <view class="warning-item" wx:for="{{report.overall.riskWarnings}}" wx:key="*this">
+          <text class="warning-dot">•</text>
+          <text class="warning-text">{{item}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="section" wx:if="{{report.healthSuggestions && (report.healthSuggestions.exercise || report.healthSuggestions.physicalTherapy || (report.healthSuggestions.diet && report.healthSuggestions.diet.length))}}">
+      <text class="section-title">健康建议</text>
+      <view class="kv-list">
+        <view wx:if="{{report.healthSuggestions.exercise}}" class="kv-item">
+          <text class="kv-label">运动建议</text>
+          <text class="kv-value">{{report.healthSuggestions.exercise}}</text>
+        </view>
+        <view wx:if="{{report.healthSuggestions.physicalTherapy}}" class="kv-item">
+          <text class="kv-label">理疗建议</text>
+          <text class="kv-value">{{report.healthSuggestions.physicalTherapy}}</text>
+        </view>
+      </view>
+      <view class="diet-grid" wx:if="{{report.healthSuggestions.diet && report.healthSuggestions.diet.length}}">
+        <view class="diet-card" wx:for="{{report.healthSuggestions.diet}}" wx:key="name">
+          <text class="diet-name">{{item.name || '饮食建议'}}</text>
+          <text class="diet-effect">{{item.effect || ''}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="section" wx:if="{{report.tongueAnalysis && (report.tongueAnalysis.summary || (report.tongueAnalysis.tongueColor && report.tongueAnalysis.tongueColor.length) || (report.tongueAnalysis.tongueShape && report.tongueAnalysis.tongueShape.length) || (report.tongueAnalysis.coatingTexture && report.tongueAnalysis.coatingTexture.length) || (report.tongueAnalysis.coatingColor && report.tongueAnalysis.coatingColor.length))}}">
+      <text class="section-title">舌象分析</text>
+      <text class="section-text" wx:if="{{report.tongueAnalysis.summary}}">{{report.tongueAnalysis.summary}}</text>
+
+      <view class="kv-list" wx:if="{{report.tongueAnalysis.tongueColor && report.tongueAnalysis.tongueColor.length}}">
+        <view class="kv-item" wx:for="{{report.tongueAnalysis.tongueColor}}" wx:key="*this">
+          <text class="kv-label">舌色</text>
+          <text class="kv-value">{{item.description || item}}</text>
+        </view>
+      </view>
+      <view class="kv-list" wx:if="{{report.tongueAnalysis.tongueShape && report.tongueAnalysis.tongueShape.length}}">
+        <view class="kv-item" wx:for="{{report.tongueAnalysis.tongueShape}}" wx:key="*this">
+          <text class="kv-label">舌形</text>
+          <text class="kv-value">{{item.description || item}}</text>
+        </view>
+      </view>
+      <view class="kv-list" wx:if="{{report.tongueAnalysis.coatingTexture && report.tongueAnalysis.coatingTexture.length}}">
+        <view class="kv-item" wx:for="{{report.tongueAnalysis.coatingTexture}}" wx:key="*this">
+          <text class="kv-label">苔质</text>
+          <text class="kv-value">{{item.description || item}}</text>
+        </view>
+      </view>
+      <view class="kv-list" wx:if="{{report.tongueAnalysis.coatingColor && report.tongueAnalysis.coatingColor.length}}">
+        <view class="kv-item" wx:for="{{report.tongueAnalysis.coatingColor}}" wx:key="*this">
+          <text class="kv-label">苔色</text>
+          <text class="kv-value">{{item.description || item}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="section" wx:if="{{report.faceAnalysis && (report.faceAnalysis.summary || (report.faceAnalysis.complexion && report.faceAnalysis.complexion.length) || (report.faceAnalysis.nose && report.faceAnalysis.nose.length) || (report.faceAnalysis.shape && report.faceAnalysis.shape.length) || (report.faceAnalysis.yinTang && report.faceAnalysis.yinTang.length) || (report.faceAnalysis.lipColor && report.faceAnalysis.lipColor.length) || (report.faceAnalysis.eyeState && report.faceAnalysis.eyeState.length))}}">
+      <text class="section-title">面诊分析</text>
+      <text class="section-text" wx:if="{{report.faceAnalysis.summary}}">{{report.faceAnalysis.summary}}</text>
+
+      <view class="kv-list" wx:if="{{report.faceAnalysis.complexion && report.faceAnalysis.complexion.length}}">
+        <view class="kv-item" wx:for="{{report.faceAnalysis.complexion}}" wx:key="*this">
+          <text class="kv-label">面色</text>
+          <text class="kv-value">{{item.description || item}}</text>
+        </view>
+      </view>
+      <view class="kv-list" wx:if="{{report.faceAnalysis.nose && report.faceAnalysis.nose.length}}">
+        <view class="kv-item" wx:for="{{report.faceAnalysis.nose}}" wx:key="*this">
+          <text class="kv-label">鼻部</text>
+          <text class="kv-value">{{item.description || item}}</text>
+        </view>
+      </view>
+      <view class="kv-list" wx:if="{{report.faceAnalysis.shape && report.faceAnalysis.shape.length}}">
+        <view class="kv-item" wx:for="{{report.faceAnalysis.shape}}" wx:key="*this">
+          <text class="kv-label">面形</text>
+          <text class="kv-value">{{item.description || item}}</text>
+        </view>
+      </view>
+      <view class="kv-list" wx:if="{{report.faceAnalysis.yinTang && report.faceAnalysis.yinTang.length}}">
+        <view class="kv-item" wx:for="{{report.faceAnalysis.yinTang}}" wx:key="*this">
+          <text class="kv-label">印堂</text>
+          <text class="kv-value">{{item.description || item}}</text>
+        </view>
+      </view>
+      <view class="kv-list" wx:if="{{report.faceAnalysis.lipColor && report.faceAnalysis.lipColor.length}}">
+        <view class="kv-item" wx:for="{{report.faceAnalysis.lipColor}}" wx:key="*this">
+          <text class="kv-label">唇色</text>
+          <text class="kv-value">{{item.description || item}}</text>
+        </view>
+      </view>
+      <view class="kv-list" wx:if="{{report.faceAnalysis.eyeState && report.faceAnalysis.eyeState.length}}">
+        <view class="kv-item" wx:for="{{report.faceAnalysis.eyeState}}" wx:key="*this">
+          <text class="kv-label">眼周</text>
+          <text class="kv-value">{{item.description || item}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="section" wx:if="{{report.healthAnalysis && (report.healthAnalysis.subjectName || report.healthAnalysis.subjectFeature || report.healthAnalysis.subjectOutline || report.healthAnalysis.dietAccept || report.healthAnalysis.dietReject || report.healthAnalysis.exerciseAccept || report.healthAnalysis.exerciseReject || report.healthAnalysis.physicalPosition || report.healthAnalysis.physicalSearch || report.healthAnalysis.physicalOperation)}}">
+      <text class="section-title">体质分析</text>
+      <view class="kv-list">
+        <view wx:if="{{report.healthAnalysis.subjectName}}" class="kv-item">
+          <text class="kv-label">体质名称</text>
+          <text class="kv-value">{{report.healthAnalysis.subjectName}}</text>
+        </view>
+        <view wx:if="{{report.healthAnalysis.subjectFeature}}" class="kv-item">
+          <text class="kv-label">体质特征</text>
+          <text class="kv-value">{{report.healthAnalysis.subjectFeature}}</text>
+        </view>
+        <view wx:if="{{report.healthAnalysis.subjectOutline}}" class="kv-item">
+          <text class="kv-label">体质概述</text>
+          <text class="kv-value">{{report.healthAnalysis.subjectOutline}}</text>
+        </view>
+        <view wx:if="{{report.healthAnalysis.dietAccept}}" class="kv-item">
+          <text class="kv-label">宜食</text>
+          <text class="kv-value">{{report.healthAnalysis.dietAccept}}</text>
+        </view>
+        <view wx:if="{{report.healthAnalysis.dietReject}}" class="kv-item">
+          <text class="kv-label">忌食</text>
+          <text class="kv-value">{{report.healthAnalysis.dietReject}}</text>
+        </view>
+        <view wx:if="{{report.healthAnalysis.exerciseAccept}}" class="kv-item">
+          <text class="kv-label">适宜运动</text>
+          <text class="kv-value">{{report.healthAnalysis.exerciseAccept}}</text>
+        </view>
+        <view wx:if="{{report.healthAnalysis.exerciseReject}}" class="kv-item">
+          <text class="kv-label">运动禁忌</text>
+          <text class="kv-value">{{report.healthAnalysis.exerciseReject}}</text>
+        </view>
+        <view wx:if="{{report.healthAnalysis.physicalPosition}}" class="kv-item">
+          <text class="kv-label">推荐穴位</text>
+          <text class="kv-value">{{report.healthAnalysis.physicalPosition}}</text>
+        </view>
+        <view wx:if="{{report.healthAnalysis.physicalSearch}}" class="kv-item">
+          <text class="kv-label">取穴说明</text>
+          <text class="kv-value">{{report.healthAnalysis.physicalSearch}}</text>
+        </view>
+        <view wx:if="{{report.healthAnalysis.physicalOperation}}" class="kv-item">
+          <text class="kv-label">操作建议</text>
+          <text class="kv-value">{{report.healthAnalysis.physicalOperation}}</text>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+</view>

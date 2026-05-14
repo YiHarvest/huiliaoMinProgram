@@ -623,6 +623,62 @@ page {
   animation: slideUp 0.3s ease;
 }
 
+/* 语音录音提示浮层 */
+.voice-floating-tip {
+  position: fixed;
+  left: 24rpx;
+  right: 24rpx;
+  bottom: calc(136rpx + env(safe-area-inset-bottom));
+  z-index: 150;
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 24rpx;
+  background: rgba(238, 90, 90, 0.96);
+  box-shadow: 0 10rpx 24rpx rgba(238, 90, 90, 0.22);
+  pointer-events: none;
+}
+
+.voice-floating-tip-icon {
+  flex-shrink: 0;
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.voice-floating-tip-icon-image {
+  width: 36rpx;
+  height: 36rpx;
+  display: block;
+  filter: brightness(0) invert(1);
+}
+
+.voice-floating-tip-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.voice-floating-tip-title {
+  font-size: 26rpx;
+  line-height: 36rpx;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.voice-floating-tip-subtitle {
+  font-size: 20rpx;
+  line-height: 28rpx;
+  color: rgba(255, 255, 255, 0.88);
+}
+
 @keyframes slideUp {
   from {
     transform: translateY(100%);
@@ -719,6 +775,31 @@ page {
 
 .input-btn-voice .input-icon {
   filter: brightness(0) saturate(100%) invert(25%) sepia(10%) saturate(300%) hue-rotate(120deg);
+}
+
+.input-btn-voice.recording {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
+  animation: voice-pulse 1.5s ease-in-out infinite;
+  box-shadow: 0 4rpx 16rpx rgba(238, 90, 90, 0.35);
+
+  .input-icon {
+    filter: brightness(0) invert(1);
+  }
+}
+
+.voice-recording-tip {
+  display: none;
+}
+
+@keyframes voice-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4rpx 16rpx rgba(238, 90, 90, 0.35);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 6rpx 24rpx rgba(238, 90, 90, 0.5);
+  }
 }
 
 .input-actions {

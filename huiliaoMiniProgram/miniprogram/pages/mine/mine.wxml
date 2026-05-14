@@ -4,13 +4,13 @@
     <view class="user-card">
       <view class="user-card-bg"></view>
       <view class="user-card-glow"></view>
-      
+
       <view class="user-content">
         <view class="user-left">
           <view class="avatar-wrap">
-            <image 
-              class="avatar" 
-              src="{{profile.avatarUrl || '/assets/icons/mine.png'}}" 
+            <image
+              class="avatar"
+              src="{{profile.avatarUrl || '/assets/icons/mine.png'}}"
               mode="aspectFill"
               binderror="onAvatarError"
             ></image>
@@ -18,19 +18,19 @@
               <text class="badge-text">+</text>
             </view>
           </view>
-          
+
           <view class="user-detail">
             <text class="user-name">{{profile.nickname || '用户昵称'}}</text>
             <text class="user-id">ID: {{profile.userCode || '未登录'}}</text>
           </view>
         </view>
-        
+
         <view class="edit-btn" bindtap="onEditProfile">
           <text class="edit-icon">✏️</text>
           <text class="edit-text">完善资料</text>
         </view>
       </view>
-      
+
       <view class="user-status">
         <text class="status-text">健康档案 · {{profileProgress.text}}</text>
         <view class="progress-bar" wx:if="{{profileProgress.percent < 100}}">
@@ -44,8 +44,8 @@
     <!-- 功能菜单 -->
     <view class="menu-section">
       <view class="menu-group">
-        <view 
-          class="menu-item" 
+        <view
+          class="menu-item"
           bindtap="onNavigateToPersonalData"
           hover-class="menu-item-hover"
           hover-stay-time="80"
@@ -61,8 +61,25 @@
           </view>
         </view>
 
-        <view 
-          class="menu-item" 
+        <view
+          class="menu-item"
+          bindtap="onReminderSettings"
+          hover-class="menu-item-hover"
+          hover-stay-time="80"
+        >
+          <view class="menu-icon menu-icon-reminder">
+            <text class="menu-icon-text">⏰</text>
+          </view>
+          <view class="menu-content">
+            <text class="menu-label">服务订阅</text>
+          </view>
+          <view class="menu-arrow">
+            <text class="arrow-icon">›</text>
+          </view>
+        </view>
+
+        <view
+          class="menu-item"
           bindtap="onContactUs"
           hover-class="menu-item-hover"
           hover-stay-time="80"
@@ -78,8 +95,8 @@
           </view>
         </view>
 
-        <view 
-          class="menu-item" 
+        <view
+          class="menu-item"
           bindtap="onFAQ"
           hover-class="menu-item-hover"
           hover-stay-time="80"
@@ -95,8 +112,8 @@
           </view>
         </view>
 
-        <view 
-          class="menu-item" 
+        <view
+          class="menu-item"
           bindtap="onPrivacyPolicy"
           hover-class="menu-item-hover"
           hover-stay-time="80"
@@ -112,8 +129,8 @@
           </view>
         </view>
 
-        <view 
-          class="menu-item" 
+        <view
+          class="menu-item"
           bindtap="onUserAgreement"
           hover-class="menu-item-hover"
           hover-stay-time="80"

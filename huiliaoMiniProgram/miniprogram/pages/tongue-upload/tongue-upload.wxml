@@ -244,6 +244,18 @@
         </view>
       </view>
 
+      <view class="section-card subscribe-card">
+        <view class="subscribe-card-content">
+          <view>
+            <text class="subscribe-card-title">每日舌苔拍摄提醒</text>
+            <text class="subscribe-card-desc">开启后，每天 08:00 会收到微信订阅消息提醒</text>
+          </view>
+          <view class="subscribe-card-action" bindtap="onOpenReminderSettings">
+            <text>去开启</text>
+          </view>
+        </view>
+      </view>
+
       <view id="analysis-report" class="section-card report-card" wx:if="{{hasReport && report}}">
         <view class="card-head">
           <view class="card-title-row">

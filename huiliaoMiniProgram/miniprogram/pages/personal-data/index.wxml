@@ -34,22 +34,44 @@
       <view 
         wx:for="{{currentList}}" 
         wx:key="id"
-        class="list-card"
+        class="list-card scale-card {{activeTab === 'report' && item.uiState === 'deleting' ? 'list-card--deleting' : ''}}"
         bindtap="handleView"
+        bindlongpress="handleCardLongPress"
         data-item="{{item}}"
       >
-        <view class="card-left">
+        <view wx:if="{{activeTab !== 'questionnaire'}}" class="card-left">
           <view class="card-icon">{{item.icon}}</view>
         </view>
-        <view class="card-center">
+
+        <view wx:if="{{activeTab === 'questionnaire'}}" class="scale-card-main">
+          <view class="scale-card-header">
+            <view class="scale-card-info">
+              <text class="card-title scale-title">{{item.title}}</text>
+              <text class="card-time">{{item.createdAt}}</text>
+              <text wx:if="{{item.summary}}" class="card-summary">{{item.summary}}</text>
+            </view>
+            <view class="scale-status-badge">{{item.status || '已保存'}}</view>
+          </view>
+
+          <view class="scale-card-footer">
+            <text class="scale-view-result">查看分析结果 ></text>
+          </view>
+        </view>
+
+        <view wx:else class="card-center">
           <text class="card-title">{{item.title}}</text>
           <text class="card-time">{{item.createdAt}}</text>
-          <text wx:if="{{activeTab === 'questionnaire'}}" class="card-score">评分：{{item.score}}分</text>
-          <text wx:if="{{activeTab === 'tongue'}}" class="card-summary">{{item.summary}}</text>
-          <text wx:if="{{activeTab === 'report'}}" class="card-type">{{item.type}} · {{item.status}}</text>
+          <text wx:if="{{activeTab === 'tongue'}}" class="card-summary">{{item.summary || '暂无分析摘要'}}</text>
+          <text wx:if="{{activeTab === 'tongue' && item.status}}" class="card-status">{{item.status}}</text>
+          <view wx:if="{{activeTab === 'report'}}" class="card-meta-row">
+            <text class="card-type">{{item.type}} · {{item.status}}</text>
+            <text wx:if="{{item.fileCount > 0}}" class="card-file-count">{{item.fileCount}} 张图片</text>
+          </view>
         </view>
-        <view class="card-right">
-          <text class="view-btn">查看</text>
+
+        <view wx:if="{{activeTab !== 'questionnaire'}}" class="card-right">
+          <text wx:if="{{activeTab === 'report' && item.uiState === 'deleting'}}" class="view-btn view-btn--danger">删除中</text>
+          <text wx:else class="view-btn">查看</text>
         </view>
       </view>
     </view>

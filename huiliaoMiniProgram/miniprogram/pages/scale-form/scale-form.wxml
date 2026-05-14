@@ -9,19 +9,19 @@
           </view>
         </view>
 
-        <view class="doctor-selector" bindtap="onChooseDoctor" hover-class="doctor-selector-hover" hover-stay-time="80">
-          <view class="doctor-content" wx:if="{{selectedDoctor}}">
-            <text class="doctor-name">{{selectedDoctor.name}}</text>
-            <text class="doctor-meta">{{selectedDoctor.department}}</text>
-            <view class="doctor-tag-row">
-              <text class="doctor-tag" wx:for="{{selectedDoctor.tags}}" wx:key="*this">{{item}}</text>
-            </view>
+        <picker
+          class="doctor-picker"
+          mode="selector"
+          range="{{doctorPickerRange}}"
+          value="{{doctorPickerIndex}}"
+          bindchange="onDoctorPickerChange"
+          disabled="{{!doctorOptions.length}}"
+        >
+          <view class="doctor-selector">
+            <text class="doctor-value {{!selectedDoctor ? 'doctor-placeholder' : ''}}">{{selectedDoctorText || '请确认医生信息'}}</text>
+            <text class="doctor-arrow">›</text>
           </view>
-          <view class="doctor-content doctor-content-placeholder" wx:else>
-            <text class="doctor-placeholder">确认医生信息</text>
-          </view>
-          <text class="doctor-arrow">></text>
-        </view>
+        </picker>
       </view>
 
       <view class="section-card">
@@ -46,18 +46,96 @@
         </view>
       </view>
 
-      <view class="scale-section">
-        <text class="scale-section-title">请选择需要填写的量表</text>
+      <view class="section-card">
+        <view class="card-head">
+          <view class="card-title-row">
+            <text class="card-title">疾病类型</text>
+            <text class="field-tag field-tag-required">必填</text>
+          </view>
+        </view>
 
-        <view class="scale-list">
+        <picker
+          class="disease-picker"
+          mode="selector"
+          range="{{diseasePickerRange}}"
+          value="{{diseasePickerIndex}}"
+          bindchange="onDiseasePickerChange"
+          disabled="{{!diseaseOptions.length}}"
+        >
+          <view class="selector-box">
+            <view class="selector-main">
+              <text class="selector-value {{!selectedDisease ? 'selector-placeholder' : ''}}">{{selectedDiseaseText || '请选择疾病类型'}}</text>
+              <text wx:if="{{selectedDisease && selectedDisease.description}}" class="selector-desc">{{selectedDisease.description}}</text>
+            </view>
+            <text class="doctor-arrow">›</text>
+          </view>
+        </picker>
+      </view>
+
+      <view class="section-card">
+        <view class="card-head">
+          <view class="card-title-row">
+            <text class="card-title">本次就诊类型</text>
+            <text class="field-tag field-tag-required">必填</text>
+          </view>
+        </view>
+
+        <picker
+          class="visit-type-picker"
+          mode="selector"
+          range="{{visitTypePickerRange}}"
+          value="{{visitTypePickerIndex}}"
+          bindchange="onVisitTypePickerChange"
+          disabled="{{!visitTypeOptions.length}}"
+        >
+          <view class="selector-box">
+            <view class="selector-main">
+              <text class="selector-value">{{selectedVisitTypeText || '请选择就诊类型'}}</text>
+              <text wx:if="{{selectedVisitType && selectedVisitType.description}}" class="selector-desc">{{selectedVisitType.description}}</text>
+            </view>
+            <text class="doctor-arrow">›</text>
+          </view>
+        </picker>
+      </view>
+
+      <view class="scale-section">
+        <text class="scale-section-title">量表</text>
+
+        <view class="scale-hint" wx:if="{{!selectedDoctor}}">
+          <text class="scale-hint-text">请先选择医生</text>
+        </view>
+
+        <view class="scale-hint" wx:elif="{{!isLoading && selectedDoctor && !diseaseOptions.length}}">
+          <text class="scale-hint-text">当前医生暂无可用疾病类型</text>
+        </view>
+
+        <view class="scale-hint" wx:elif="{{!selectedDisease || !selectedVisitType}}">
+          <text class="scale-hint-text">请先选择疾病类型和本次就诊类型</text>
+        </view>
+
+        <view class="scale-hint" wx:elif="{{isLoading && !visibleScales.length}}">
+          <text class="scale-hint-text">正在加载量表...</text>
+        </view>
+
+        <view class="scale-hint" wx:elif="{{!visibleScales.length}}">
+          <text class="scale-hint-text">当前条件下暂无可填写量表</text>
+        </view>
+
+        <view class="scale-list" wx:elif="{{visibleScales.length}}">
           <view class="scale-card" wx:for="{{visibleScales}}" wx:key="id">
             <view class="scale-card-main">
               <view class="scale-header">
                 <text class="scale-name">{{item.questionnaireName}}</text>
               </view>
-              <text class="scale-department">{{item.description || '暂无说明'}}</text>
+              <text class="scale-department">{{item.description || '无描述'}}</text>
             </view>
-            <button class="scale-action" bindtap="onStartScale" data-template-id="{{item.templateId}}" data-name="{{item.questionnaireName}}">开始填写</button>
+            <button
+              class="scale-action"
+              bindtap="onStartScale"
+              data-template-id="{{item.templateId}}"
+              data-questionnaire-id="{{item.questionnaireId}}"
+              data-name="{{item.questionnaireName}}"
+            >开始</button>
           </view>
         </view>
       </view>

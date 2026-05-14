@@ -1,0 +1,119 @@
+<view class="reminder-settings">
+  <view class="hero">
+    <text class="hero-title">消息提醒</text>
+    <text class="hero-desc">开启后，系统会按您设置的频率和时间发送舌苔拍摄提醒</text>
+  </view>
+
+  <view class="card" wx:if="{{!isLoading}}">
+    <view class="card-row">
+      <view>
+        <text class="label">每日舌苔拍摄提醒</text>
+        <text class="desc">提醒您按时拍摄并上传舌苔照片</text>
+      </view>
+      <view class="status status-on" wx:if="{{status.enabled}}">已开启</view>
+      <view class="status status-off" wx:else>未开启</view>
+    </view>
+
+    <!-- 提醒频率选择 -->
+    <view class="config-item">
+      <view class="config-label">
+        <text class="config-label-text">提醒频率</text>
+      </view>
+      <picker
+        mode="selector"
+        range="{{frequencyOptions}}"
+        range-key="label"
+        value="{{selectedFrequencyIndex}}"
+        bindchange="onFrequencyChange"
+      >
+        <view class="config-value">
+          <text>{{frequencyText}}</text>
+          <text class="arrow">></text>
+        </view>
+      </picker>
+    </view>
+
+    <!-- 提醒时间选择 -->
+    <view class="config-item">
+      <view class="config-label">
+        <text class="config-label-text">提醒时间</text>
+      </view>
+      <picker
+        mode="time"
+        value="{{currentReminderTime}}"
+        bindchange="onTimeChange"
+      >
+        <view class="config-value">
+          <text>{{reminderTimeText}}</text>
+          <text class="arrow">></text>
+        </view>
+      </picker>
+    </view>
+
+    <!-- 状态卡片 - 只绑定4个统一字段 -->
+    <view class="meta-grid">
+      <view class="meta-item">
+        <text class="meta-label">提醒频率</text>
+        <text class="meta-value">{{frequencyText}}</text>
+      </view>
+      <view class="meta-item">
+        <text class="meta-label">提醒时间</text>
+        <text class="meta-value">{{reminderTimeText}}</text>
+      </view>
+      <view class="meta-item">
+        <text class="meta-label">发送状态</text>
+        <text class="meta-value">{{sendStatusText}}</text>
+      </view>
+      <view class="meta-item">
+        <text class="meta-label">下次提醒</text>
+        <text class="meta-value">{{nextReminderText}}</text>
+      </view>
+    </view>
+
+    <view class="notice">
+      <text class="notice-title">说明</text>
+      <text class="notice-text">开启后，系统会通过微信订阅消息按您设置的频率和时间提醒您拍摄舌苔照片。您可以随时修改或关闭。</text>
+    </view>
+  </view>
+
+  <!-- 按钮区域 - 主次层级分明 -->
+  <view class="action-area" wx:if="{{!isLoading}}">
+    <!-- 次操作：保存配置（始终显示） - 白底描边 -->
+    <button
+      class="action-btn secondary-btn"
+      bindtap="onSaveConfig"
+      loading="{{isSaving}}"
+    >
+      保存配置
+    </button>
+
+    <!-- 未开启时：主操作是开启提醒（绿色实心 + 阴影） -->
+    <button
+      class="action-btn primary-btn"
+      bindtap="onEnableReminder"
+      wx:if="{{!status.enabled}}"
+      loading="{{isSubmitting}}"
+    >
+      开启提醒
+    </button>
+
+    <!-- 已开启时：次操作是关闭提醒（白底描边） -->
+    <button
+      class="action-btn secondary-btn"
+      bindtap="onDisableReminder"
+      wx:if="{{status.enabled}}"
+      loading="{{isSubmitting}}"
+    >
+      关闭提醒
+    </button>
+
+    <!-- 次操作：去上传舌苔（白底描边） - 始终显示，和订阅状态无关 -->
+    <button class="action-btn secondary-btn" bindtap="onGoTongueUpload">
+      去上传舌苔
+    </button>
+  </view>
+
+  <view class="loading" wx:if="{{isLoading}}">
+    <text class="loading-text">加载中...</text>
+  </view>
+</view>

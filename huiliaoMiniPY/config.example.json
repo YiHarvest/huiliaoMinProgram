@@ -25,5 +25,15 @@
   "fastgpt": {
     "base_url": "https://your-fastgpt-api-base-url",
     "api_key": "your_fastgpt_api_key"
+  },
+  "siliconflow": {
+    "enabled": true,
+    "base_url": "https://api.siliconflow.cn/v1",
+    "chat_completions_path": "/chat/completions",
+    "api_key": "your_siliconflow_api_key",
+    "model": "deepseek-ai/DeepSeek-V4-Flash",
+    "temperature": 0.3,
+    "max_tokens": 1800,
+    "timeout_seconds": 60
   }
 }

@@ -7,7 +7,7 @@ from typing import Any, Optional
 from urllib import parse
 
 from config import config
-from db import get_tongue_report, save_tongue_report
+from database.tongue_repository import get_tongue_report, save_tongue_report
 from test_shezheng_api import (
     MAX_POLL_COUNT,
     POLL_INTERVAL_SECONDS,

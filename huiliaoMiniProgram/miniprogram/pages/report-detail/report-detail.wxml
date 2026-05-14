@@ -1,0 +1,76 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="state state-loading">
+    <view class="spinner"></view>
+    <text class="state-text">正在加载检查报告...</text>
+  </view>
+
+  <view wx:elif="{{error}}" class="state state-error">
+    <text class="state-title">加载失败</text>
+    <text class="state-text">{{statusText}}</text>
+    <button class="retry-btn" bindtap="retryLoad">重新加载</button>
+  </view>
+
+  <view wx:elif="{{status === 'empty'}}" class="state state-empty">
+    <text class="state-title">暂无图片</text>
+    <text class="state-text">{{statusText}}</text>
+  </view>
+
+  <scroll-view wx:else class="content" scroll-y>
+    <view class="hero-card">
+      <text class="hero-badge">检查报告</text>
+      <text class="hero-title">{{report && report.reportType || '检查报告'}}</text>
+      <text class="hero-summary">{{report && report.remark || '暂无报告备注'}}</text>
+
+      <view class="score-panel">
+        <text class="score-label">报告状态</text>
+        <text class="score-value">{{formatStatus(report && report.status)}}</text>
+      </view>
+
+      <view class="hero-meta">
+        <view class="meta-item" wx:if="{{report && report.doctorName}}">
+          <text class="meta-label">医生</text>
+          <text class="meta-value">{{report && report.doctorName}}</text>
+        </view>
+        <view class="meta-item" wx:if="{{report && report.doctorDepartment}}">
+          <text class="meta-label">科室</text>
+          <text class="meta-value">{{report && report.doctorDepartment}}</text>
+        </view>
+        <view class="meta-item" wx:if="{{createdAt}}">
+          <text class="meta-label">创建时间</text>
+          <text class="meta-value">{{createdAt}}</text>
+        </view>
+        <view class="meta-item" wx:if="{{updatedAt}}">
+          <text class="meta-label">更新时间</text>
+          <text class="meta-value">{{updatedAt}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-head">
+        <text class="section-title">上传图片</text>
+        <text class="section-count" wx:if="{{fileUrls.length}}">{{fileUrls.length}} 张</text>
+      </view>
+
+      <view wx:if="{{fileUrls.length}}" class="photo-grid">
+        <view class="photo-card" wx:for="{{report.files}}" wx:key="fileId" data-url="{{item.fileUrl}}" bindtap="previewImage">
+          <image class="photo-image" src="{{item.fileUrl}}" mode="aspectFill" />
+          <text class="photo-name">{{item.originalName || '检查图片'}}</text>
+        </view>
+      </view>
+
+      <view wx:else class="empty-box">
+        <text class="empty-text">暂无上传图片</text>
+      </view>
+    </view>
+
+    <view class="section" wx:if="{{report.remark}}">
+      <text class="section-title">备注说明</text>
+      <text class="section-text">{{report.remark}}</text>
+    </view>
+
+    <view class="section" wx:if="{{fileUrls.length > 1}}">
+      <button class="preview-all-btn" bindtap="previewAll">查看全部图片</button>
+    </view>
+  </scroll-view>
+</view>

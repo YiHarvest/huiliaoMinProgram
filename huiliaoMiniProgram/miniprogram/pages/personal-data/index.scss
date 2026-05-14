@@ -127,12 +127,25 @@ page {
   background: #ffffff;
   border-radius: 24rpx;
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  max-height: 180rpx;
+  overflow: hidden;
+  transition: transform 0.28s ease, box-shadow 0.2s ease, opacity 0.28s ease, max-height 0.28s ease, padding 0.28s ease, margin 0.28s ease;
 }
 
 .list-card:active {
   transform: scale(0.98);
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+}
+
+.list-card--deleting {
+  opacity: 0;
+  transform: translateX(24rpx) scale(0.96);
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  pointer-events: none;
 }
 
 .card-left {
@@ -184,9 +197,34 @@ page {
   white-space: nowrap;
 }
 
+.card-status {
+  display: inline-flex;
+  align-self: flex-start;
+  margin-top: 4rpx;
+  padding: 6rpx 16rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  color: #00A88F;
+  background: rgba(0, 168, 143, 0.08);
+}
+
 .card-type {
   font-size: 22rpx;
   color: #999999;
+}
+
+.card-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.card-file-count {
+  font-size: 22rpx;
+  color: #999999;
+  background-color: #f5f5f5;
+  padding: 2rpx 12rpx;
+  border-radius: 8rpx;
 }
 
 .card-right {
@@ -201,4 +239,74 @@ page {
   font-size: 26rpx;
   font-weight: 500;
   border-radius: 999rpx;
+}
+
+.view-btn--danger {
+  background: rgba(229, 77, 66, 0.10);
+  color: #E54D42;
+}
+
+.scale-card {
+  padding: 28rpx 32rpx;
+  max-height: none;
+}
+
+.scale-card-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.scale-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.scale-card-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.scale-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #203530;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scale-status-badge {
+  flex-shrink: 0;
+  padding: 8rpx 24rpx;
+  background: rgba(79, 152, 136, 0.10);
+  color: #4F9888;
+  font-size: 24rpx;
+  font-weight: 500;
+  border-radius: 999rpx;
+  align-self: flex-start;
+}
+
+.scale-card-footer {
+  padding-top: 20rpx;
+  border-top: 1rpx solid #f0f2f1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scale-view-result {
+  font-size: 28rpx;
+  color: #4F9888;
+  font-weight: 500;
 }

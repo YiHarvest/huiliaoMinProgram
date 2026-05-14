@@ -16,19 +16,44 @@ interface WechatLoginResponse {
   hasProfile?: boolean
 }
 
-function requestWxLogin(code: string): Promise<WechatLoginResponse> {
+function requestWxLogin(code: string, retryCount: number = 0): Promise<WechatLoginResponse> {
   return new Promise((resolve, reject) => {
+    const maxRetries = 3
+    const loginUrl = 'https://miniprogram.huiliaoyiyuan.com/api/wxapp/login'
+    
+    console.log(`[app] Login attempt ${retryCount + 1}/${maxRetries + 1}, URL: ${loginUrl}`)
+    
     wx.request({
-      url: 'https://miniprogram.huiliaoyiyuan.com/api/wxapp/login',
+      url: loginUrl,
       method: 'POST',
       header: {
         'Content-Type': 'application/json'
       },
       data: { code },
+      timeout: 10000,
       success(res) {
+        console.log(`[app] Login response: statusCode=${res.statusCode}`)
+        
         if (res.statusCode >= 200 && res.statusCode < 300) {
+          console.log('[app] Login successful')
           resolve(res.data as WechatLoginResponse)
+        } else if (res.statusCode === 502 || res.statusCode === 503) {
+          // Server error, retry
+          if (retryCount < maxRetries) {
+            console.warn(`[app] Server error (${res.statusCode}), retrying... (${retryCount + 1}/${maxRetries})`)
+            setTimeout(() => {
+              requestWxLogin(code, retryCount + 1).then(resolve).catch(reject)
+            }, 2000 * (retryCount + 1)) // Exponential backoff
+          } else {
+            console.error(`[app] Login failed after ${maxRetries} retries with status ${res.statusCode}`)
+            reject({
+              statusCode: res.statusCode,
+              data: res.data,
+              message: '服务器暂时不可用，请稍后重试'
+            })
+          }
         } else {
+          console.error(`[app] Login failed with status ${res.statusCode}:`, res.data)
           reject({
             statusCode: res.statusCode,
             data: res.data
@@ -36,10 +61,41 @@ function requestWxLogin(code: string): Promise<WechatLoginResponse> {
         }
       },
       fail(err) {
-        reject(err)
+        console.error('[app] Login request failed:', err)
+        if (retryCount < maxRetries) {
+          console.warn(`[app] Network error, retrying... (${retryCount + 1}/${maxRetries})`)
+          setTimeout(() => {
+            requestWxLogin(code, retryCount + 1).then(resolve).catch(reject)
+          }, 2000 * (retryCount + 1))
+        } else {
+          reject(err)
+        }
       }
     })
   })
+}
+
+function readCachedProfile(): Record<string, any> {
+  const cachedProfile = wx.getStorageSync('USER_PROFILE')
+
+  if (!cachedProfile) {
+    return {}
+  }
+
+  if (typeof cachedProfile === 'string') {
+    try {
+      const parsed = JSON.parse(cachedProfile)
+      return parsed && typeof parsed === 'object' ? parsed : {}
+    } catch (error) {
+      return {}
+    }
+  }
+
+  if (typeof cachedProfile === 'object') {
+    return cachedProfile
+  }
+
+  return {}
 }
 
 App<IAppOption>({
@@ -63,7 +119,7 @@ App<IAppOption>({
   },
 
   restoreFromCache() {
-    const cachedProfile = wx.getStorageSync('USER_PROFILE')
+    const cachedProfile = readCachedProfile()
     if (cachedProfile && cachedProfile.userId) {
       this.globalData.userId = cachedProfile.userId
       this.globalData.userCode = cachedProfile.userCode || ''
@@ -73,19 +129,28 @@ App<IAppOption>({
   },
 
   startLogin() {
-    if (this.globalData.isLoggingIn) return
-    if (this.globalData.loginPromise) return
+    if (this.globalData.isLoggingIn) {
+      console.log('[app] Already logging in, skipping...')
+      return
+    }
+    if (this.globalData.loginPromise) {
+      console.log('[app] Login promise already exists, skipping...')
+      return
+    }
 
     this.globalData.isLoggingIn = true
+    console.log('[app] Starting login process...')
 
     this.globalData.loginPromise = new Promise<void>((resolve) => {
       wx.login({
         success: async (res) => {
           if (res.code) {
             try {
+              console.log('[app] Got WeChat login code, requesting backend login...')
               const loginData = await requestWxLogin(res.code)
 
               if (loginData && loginData.userId) {
+                const cachedProfile = readCachedProfile()
                 const currentUser = {
                   userId: loginData.userId,
                   userCode: loginData.userCode,
@@ -97,31 +162,47 @@ App<IAppOption>({
                   birthday: loginData.profile?.birthday || '',
                   hasProfile: loginData.hasProfile === true || !!loginData.profile
                 }
+                const mergedProfile = {
+                  ...cachedProfile,
+                  ...currentUser
+                }
 
                 wx.setStorageSync('USER_ID', currentUser.userId)
                 wx.setStorageSync('USER_CODE', currentUser.userCode)
-                wx.setStorageSync('USER_PROFILE', currentUser)
+                wx.setStorageSync('USER_PROFILE', mergedProfile)
 
-                this.globalData.userId = currentUser.userId
-                this.globalData.userCode = currentUser.userCode
-                this.globalData.userProfile = currentUser
+                this.globalData.userId = mergedProfile.userId
+                this.globalData.userCode = mergedProfile.userCode
+                this.globalData.userProfile = mergedProfile
                 this.globalData.loginReady = true
 
-                console.log('[app] 登录成功, userCode:', currentUser.userCode)
+                console.log('[app] 登录成功, userId:', currentUser.userId, ', userCode:', currentUser.userCode)
 
                 // 通知所有等待的回调
-                this.notifyLoginComplete(currentUser)
+                this.notifyLoginComplete(mergedProfile)
+              } else {
+                console.warn('[app] Login response missing userId or userCode')
               }
-            } catch (error) {
-              console.error('[app] 登录请求异常:', error)
+            } catch (error: any) {
+              console.error('[app] 登录请求异常:', error?.message || error)
+              // Mark as ready even if login fails, so the app can continue with offline mode
+              this.globalData.loginReady = true
+              this.notifyLoginComplete(null)
             }
+          } else {
+            console.error('[app] Failed to get WeChat login code')
+            this.globalData.loginReady = true
+            this.notifyLoginComplete(null)
           }
 
           this.globalData.isLoggingIn = false
           resolve()
         },
-        fail: () => {
+        fail: (err) => {
+          console.error('[app] wx.login failed:', err)
           this.globalData.isLoggingIn = false
+          this.globalData.loginReady = true
+          this.notifyLoginComplete(null)
           resolve()
         }
       })

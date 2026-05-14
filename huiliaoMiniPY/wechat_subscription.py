@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import re
 from datetime import datetime, timedelta
@@ -5,15 +7,14 @@ from typing import Any, Optional
 from urllib import error, parse, request
 
 from config import config
-from db import (
-    find_sendable_subscription,
-    get_meta,
-    insert_send_log,
-    mark_subscription_sent,
-    upsert_subscription_record,
-    upsert_user,
-)
-from storage import now_iso
+
+
+TOKEN_META_KEY = 'wechat_access_token_cache'
+
+
+def now_iso() -> str:
+    return datetime.now().isoformat()
+
 
 DEFAULT_SCENE_CONFIG: dict[str, dict[str, Any]] = {
     'ai_reply': {
@@ -52,9 +53,25 @@ DEFAULT_SCENE_CONFIG: dict[str, dict[str, Any]] = {
             'thing4': '{{clinic_location}}',
         },
     },
+    'tongue_reminder': {
+        'name': '每日舌苔拍摄提醒',
+        'description': '每日 08:00 提醒用户拍摄舌苔照片',
+        'template_id': config.get('tongueReminderTemplateId') or 'TODO_MINIPROGRAM_TONGUE_REMINDER_TEMPLATE_ID',
+        'page': 'pages/tongue-upload/tongue-upload',
+        'keywords': {
+            'thing1': '请拍摄今日舌苔照片',
+            'thing2': '点击进入小程序上传',
+            'name3': '慧疗医生团队',
+            'thing4': '请按时拍摄并上传舌苔照片',
+        },
+    },
 }
 
-TOKEN_META_KEY = 'wechat_access_token_cache'
+
+def _load_db_meta_functions():
+    from db import get_meta, set_meta
+
+    return get_meta, set_meta
 
 
 def get_wechat_mini_program_config() -> dict[str, Any]:
@@ -73,24 +90,16 @@ def get_wechat_mini_program_config() -> dict[str, Any]:
             },
         }
 
-    # 优先读取 wechat 配置节点
     wechat_config = config.get('wechat') or {}
     app_id = wechat_config.get('appid') or wechat_config.get('app_id')
-    
-    # 兼容 wxapp 配置节点
     if not app_id:
         wxapp_config = config.get('wxapp') or {}
         app_id = wxapp_config.get('appid') or wxapp_config.get('app_id')
-    
-    # 兼容旧的 wechat_mini_program 配置节点
     if not app_id:
         app_id = mini_program.get('app_id')
-    
-    # 设置默认值
     if not app_id or str(app_id).startswith('TODO_'):
         app_id = 'TODO_MINIPROGRAM_APPID'
 
-    # 同样处理 app_secret
     app_secret = wechat_config.get('secret') or wechat_config.get('app_secret')
     if not app_secret:
         wxapp_config = config.get('wxapp') or {}
@@ -174,13 +183,6 @@ def exchange_code_for_session(code: str) -> dict[str, Any]:
     if str(app_id).startswith('TODO_') or str(app_secret).startswith('TODO_'):
         raise RuntimeError('小程序 appid 或 secret 尚未配置')
 
-    # 打印日志用于排查
-    code_length = len(code) if code else 0
-    code_prefix = code[:6] if code_length >= 6 else code
-    code_suffix = code[-4:] if code_length >= 4 else ''
-    print(f"[登录调试] appid: {app_id}")
-    print(f"[登录调试] code 长度: {code_length}, 前缀: {code_prefix}, 后缀: {code_suffix}")
-
     query = parse.urlencode(
         {
             'appid': app_id,
@@ -189,14 +191,8 @@ def exchange_code_for_session(code: str) -> dict[str, Any]:
             'grant_type': 'authorization_code',
         }
     )
-    
-    print(f"[登录调试] 请求微信接口: sns/jscode2session")
-    result = http_json_request(
-        f'https://api.weixin.qq.com/sns/jscode2session?{query}'
-    )
-    
-    print(f"[登录调试] 微信接口返回: {json.dumps(result, ensure_ascii=False)}")
 
+    result = http_json_request(f'https://api.weixin.qq.com/sns/jscode2session?{query}')
     errcode = result.get('errcode')
     if errcode:
         raise RuntimeError(result.get('errmsg') or f'登录失败: {errcode}')
@@ -205,33 +201,42 @@ def exchange_code_for_session(code: str) -> dict[str, Any]:
     if not openid:
         raise RuntimeError('微信登录未返回 openid')
 
-    # 使用 MySQL 版本的 upsert_user
-    from mysql_storage import upsert_user_mysql, get_user_profile_mysql
+    from mysql_storage import upsert_user_mysql, get_user_profile_mysql, get_user_sensitive_info_mysql, normalize_user_profile
+
     user_info = upsert_user_mysql(
         openid=openid,
         session_key=result.get('session_key'),
         unionid=result.get('unionid'),
     )
 
-    # 获取用户资料
     user_id = user_info['id']
     profile = get_user_profile_mysql(user_id) or {}
+    sensitive_info = get_user_sensitive_info_mysql(user_id) or {}
+
+    base_profile = {
+        'nickname': profile.get('nickname'),
+        'avatarUrl': profile.get('avatarUrl'),
+        'gender': profile.get('gender'),
+        'birthday': profile.get('birthday'),
+    }
+
+    normalized_profile = normalize_user_profile(base_profile, sensitive_info)
 
     return {
         'userId': user_id,
         'userCode': user_info['userCode'],
         'openid': openid,
         'unionid': result.get('unionid'),
-        'profile': {
-            'nickname': profile.get('nickname'),
-            'avatarUrl': profile.get('avatarUrl'),
-            'gender': profile.get('gender'),
-            'birthday': profile.get('birthday'),
-        }
+        'profile': normalized_profile,
     }
 
 
 def parse_cached_token() -> Optional[dict[str, Any]]:
+    try:
+        get_meta, _ = _load_db_meta_functions()
+    except Exception:
+        return None
+
     raw_value = get_meta(TOKEN_META_KEY)
     if not raw_value:
         return None
@@ -262,16 +267,20 @@ def parse_cached_token() -> Optional[dict[str, Any]]:
 
 def cache_access_token(access_token: str, expires_in: int) -> None:
     expires_at = datetime.now() + timedelta(seconds=max(expires_in - 300, 60))
-    set_meta(
-        TOKEN_META_KEY,
-        json.dumps(
-            {
-                'access_token': access_token,
-                'expires_at': expires_at.isoformat(),
-            },
-            ensure_ascii=False,
-        ),
-    )
+    try:
+        _, set_meta = _load_db_meta_functions()
+        set_meta(
+            TOKEN_META_KEY,
+            json.dumps(
+                {
+                    'access_token': access_token,
+                    'expires_at': expires_at.isoformat(),
+                },
+                ensure_ascii=False,
+            ),
+        )
+    except Exception:
+        return
 
 
 def fetch_access_token(force_refresh: bool = False) -> str:
@@ -327,7 +336,7 @@ def build_subscribe_payload(
     scene: str,
     openid: str,
     context: dict[str, Any],
-    page_path: Optional[str]
+    page_path: Optional[str],
 ) -> tuple[str, dict[str, Any], str]:
     wx_config = get_wechat_mini_program_config()
     scene_config = wx_config['subscribe_templates'].get(scene)
@@ -342,9 +351,50 @@ def build_subscribe_payload(
     resolved_page = normalize_page_path(
         replace_template_values(page_path or str(scene_config.get('page') or ''), context)
     )
+    def resolve_keyword_value(keyword: str, raw_value: Any) -> str:
+        rendered_value = replace_template_values(str(raw_value), context).strip()
+        if rendered_value and rendered_value.lower() not in {'none', 'undefined', 'null'}:
+            return rendered_value
+
+        keyword_lower = keyword.lower()
+
+        fallback_value = {
+            'name3': '舌苔拍摄提醒',
+            'thing1': '舌苔拍摄提醒',
+            'thing2': '请按时拍摄并上传舌苔照片',
+            'thing3': '慧疗医生团队',
+            'thing4': '请按时拍摄并上传舌苔照片',
+            'phrase1': '待完成',
+            'phrase2': '提醒',
+            'number1': '0',
+            'number2': '0',
+            'date1': datetime.now().strftime('%Y-%m-%d'),
+            'date2': datetime.now().strftime('%Y-%m-%d'),
+            'time1': datetime.now().strftime('%H:%M'),
+            'time2': datetime.now().strftime('%H:%M'),
+            'time3': datetime.now().strftime('%H:%M'),
+            'time4': datetime.now().strftime('%H:%M'),
+        }.get(keyword_lower)
+
+        if fallback_value is not None:
+            return str(fallback_value)
+
+        if keyword_lower.startswith('name'):
+            return '舌苔拍摄提醒'
+        if keyword_lower.startswith('thing'):
+            return '请按时拍摄并上传舌苔照片'
+        if keyword_lower.startswith('phrase'):
+            return '待拍摄'
+        if keyword_lower.startswith('time') or keyword_lower.startswith('date'):
+            return datetime.now().strftime('%Y-%m-%d %H:%M')
+        if keyword_lower.startswith('number'):
+            return '0'
+
+        return '请按时拍摄并上传舌苔照片'
+
     data = {
         keyword: {
-            'value': replace_template_values(str(value), context)
+            'value': resolve_keyword_value(keyword, value)
         }
         for keyword, value in (scene_config.get('keywords') or {}).items()
     }
@@ -354,6 +404,7 @@ def build_subscribe_payload(
         'template_id': template_id,
         'page': resolved_page,
         'data': data,
+        'miniprogram_state': str(config.get('wechat_mini_program_state') or 'developer'),
     }, resolved_page
 
 
@@ -363,17 +414,22 @@ def record_subscription_result(
     openid: str,
     template_id: str,
     scene: str,
-    subscribe_status: str
+    subscribe_status: str,
 ) -> None:
     accepted_at = now_iso() if subscribe_status == 'accept' else None
-    upsert_subscription_record(
-        user_id=user_id,
-        openid=openid,
-        template_id=template_id,
-        scene=scene,
-        subscribe_status=subscribe_status,
-        accepted_at=accepted_at,
-    )
+    try:
+        from db import upsert_subscription_record
+
+        upsert_subscription_record(
+            user_id=user_id,
+            openid=openid,
+            template_id=template_id,
+            scene=scene,
+            subscribe_status=subscribe_status,
+            accepted_at=accepted_at,
+        )
+    except Exception:
+        return
 
 
 def send_subscribe_message(
@@ -383,6 +439,7 @@ def send_subscribe_message(
     context: dict[str, Any],
     biz_id: Optional[str] = None,
     page_path: Optional[str] = None,
+    miniprogram_state: Optional[str] = None,
 ) -> dict[str, Any]:
     template_id, payload, resolved_page = build_subscribe_payload(
         scene=scene,
@@ -391,71 +448,43 @@ def send_subscribe_message(
         page_path=page_path,
     )
 
-    subscription_record = find_sendable_subscription(openid, template_id, scene)
-    if not subscription_record:
-        return {
-            'success': False,
-            'skipped': True,
-            'reason': 'no_active_subscription',
-            'templateId': template_id,
-        }
+    if miniprogram_state:
+        payload['miniprogram_state'] = miniprogram_state
 
-    def do_send(force_refresh_token: bool = False) -> dict[str, Any]:
-        access_token = fetch_access_token(force_refresh=force_refresh_token)
-        return http_json_request(
-            f'https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token={access_token}',
-            payload,
-            method='POST',
-        )
+    if scene == 'tongue_reminder':
+        print("[subscription test-send] outgoing payload =", json.dumps(payload, ensure_ascii=False, indent=2))
 
-    try:
-        response = do_send(force_refresh_token=False)
-        if response.get('errcode') in {40001, 42001}:
-            response = do_send(force_refresh_token=True)
-    except Exception as exc:
-        insert_send_log(
-            openid=openid,
-            template_id=template_id,
-            scene=scene,
-            biz_id=biz_id,
-            page_path=resolved_page,
-            payload=payload,
-            send_status='request_failed',
-            errcode=None,
-            errmsg=str(exc),
-        )
-        raise
-
-    errcode = response.get('errcode')
-    errmsg = response.get('errmsg')
-    is_success = errcode in {None, 0}
-
-    insert_send_log(
-        openid=openid,
-        template_id=template_id,
-        scene=scene,
-        biz_id=biz_id,
-        page_path=resolved_page,
+    access_token = fetch_access_token()
+    response = http_json_request(
+        f'https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token={access_token}',
         payload=payload,
-        send_status='success' if is_success else 'failed',
-        errcode=None if errcode is None else str(errcode),
-        errmsg=None if errmsg is None else str(errmsg),
+        method='POST',
     )
 
-    if is_success:
-        mark_subscription_sent(openid, template_id, scene)
-    else:
-        return {
-            'success': False,
-            'skipped': False,
-            'templateId': template_id,
-            'errcode': errcode,
-            'errmsg': errmsg,
-        }
+    errcode = int(response.get('errcode') or 0)
+    if errcode:
+        errmsg = str(response.get('errmsg') or '订阅消息发送失败')
+        raise RuntimeError(f'{errmsg} ({errcode})')
 
     return {
         'success': True,
-        'skipped': False,
         'templateId': template_id,
         'page': resolved_page,
+        'bizId': biz_id,
+        'response': response,
     }
+
+
+def send_tongue_reminder(openid: str) -> dict[str, Any]:
+    return send_subscribe_message(
+        openid=openid,
+        scene='tongue_reminder',
+        context={
+            'thing1': '请拍摄今日舌苔照片',
+            'thing2': '点击进入小程序上传',
+            'name3': '慧疗医生团队',
+            'thing4': '请按时拍摄并上传舌苔照片',
+        },
+        page_path='pages/tongue-upload/tongue-upload',
+        miniprogram_state=str(config.get('wechat_mini_program_state') or 'developer'),
+    )

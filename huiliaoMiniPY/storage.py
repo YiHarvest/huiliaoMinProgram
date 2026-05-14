@@ -85,6 +85,39 @@ def init_db() -> None:
                 created_at TEXT NOT NULL
             );
 
+            CREATE TABLE IF NOT EXISTS ai_chat_sessions (
+                session_uuid TEXT PRIMARY KEY,
+                user_id TEXT,
+                openid TEXT NOT NULL,
+                assistant_id TEXT NOT NULL,
+                llm_chat_id TEXT,
+                title TEXT NOT NULL,
+                preview TEXT,
+                message_count INTEGER NOT NULL DEFAULT 0,
+                last_message_at TEXT NOT NULL,
+                deleted_at TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS ai_chat_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                message_uuid TEXT NOT NULL UNIQUE,
+                session_uuid TEXT NOT NULL,
+                role TEXT NOT NULL,
+                message_type TEXT NOT NULL DEFAULT 'text',
+                content TEXT,
+                media_url TEXT,
+                file_name TEXT,
+                file_size INTEGER,
+                extra_json TEXT,
+                sort_no INTEGER NOT NULL,
+                llm_reply_id TEXT,
+                deleted_at TEXT,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (session_uuid) REFERENCES ai_chat_sessions(session_uuid)
+            );
+
             CREATE TABLE IF NOT EXISTS tongue_report_records (
                 analysis_id TEXT PRIMARY KEY,
                 user_id TEXT,
@@ -174,6 +207,9 @@ def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_user_subject_record ON crm_questionnaire_user_subject_record(record_id, subject_id);
             CREATE INDEX IF NOT EXISTS idx_submit_result ON crm_questionnaire_user_submit_result(record_id);
             CREATE INDEX IF NOT EXISTS idx_submit_result_analysis ON crm_questionnaire_user_submit_result_analysis(record_id);
+            CREATE INDEX IF NOT EXISTS idx_ai_chat_sessions_owner ON ai_chat_sessions(openid, deleted_at, last_message_at);
+            CREATE INDEX IF NOT EXISTS idx_ai_chat_messages_session_sort ON ai_chat_messages(session_uuid, sort_no);
+            CREATE INDEX IF NOT EXISTS idx_ai_chat_messages_reply_id ON ai_chat_messages(llm_reply_id);
             '''
         )
 
@@ -387,6 +423,368 @@ def get_ai_reply(reply_id: str) -> Optional[dict[str, Any]]:
     return dict(row) if row else None
 
 
+def upsert_chat_session(
+    *,
+    session_uuid: str,
+    user_id: Optional[str],
+    openid: str,
+    assistant_id: str,
+    llm_chat_id: Optional[str],
+    title: str,
+    preview: Optional[str],
+    message_count: int,
+    last_message_at: str,
+    deleted_at: Optional[str] = None
+) -> dict[str, Any]:
+    timestamp = now_iso()
+    with get_connection() as connection:
+        existing = connection.execute(
+            '''
+            SELECT session_uuid FROM ai_chat_sessions
+            WHERE session_uuid = ?
+            LIMIT 1
+            ''',
+            (session_uuid,)
+        ).fetchone()
+
+        if existing:
+            connection.execute(
+                '''
+                UPDATE ai_chat_sessions
+                SET user_id = ?,
+                    openid = ?,
+                    assistant_id = ?,
+                    llm_chat_id = ?,
+                    title = ?,
+                    preview = ?,
+                    message_count = ?,
+                    last_message_at = ?,
+                    deleted_at = ?,
+                    updated_at = ?
+                WHERE session_uuid = ?
+                ''',
+                (
+                    user_id,
+                    openid,
+                    assistant_id,
+                    llm_chat_id,
+                    title,
+                    preview,
+                    message_count,
+                    last_message_at,
+                    deleted_at,
+                    timestamp,
+                    session_uuid,
+                )
+            )
+        else:
+            connection.execute(
+                '''
+                INSERT INTO ai_chat_sessions (
+                    session_uuid, user_id, openid, assistant_id, llm_chat_id,
+                    title, preview, message_count, last_message_at,
+                    deleted_at, created_at, updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''',
+                (
+                    session_uuid,
+                    user_id,
+                    openid,
+                    assistant_id,
+                    llm_chat_id,
+                    title,
+                    preview,
+                    message_count,
+                    last_message_at,
+                    deleted_at,
+                    timestamp,
+                    timestamp,
+                )
+            )
+
+    return get_chat_session(session_uuid) or {
+        'sessionUuid': session_uuid,
+        'userId': user_id,
+        'openid': openid,
+        'assistantId': assistant_id,
+        'llmChatId': llm_chat_id,
+        'title': title,
+        'preview': preview,
+        'messageCount': message_count,
+        'lastMessageAt': last_message_at,
+        'deletedAt': deleted_at,
+        'createdAt': timestamp,
+        'updatedAt': timestamp,
+    }
+
+
+def get_chat_session(session_uuid: str) -> Optional[dict[str, Any]]:
+    with get_connection() as connection:
+        row = connection.execute(
+            '''
+            SELECT
+                session_uuid, user_id, openid, assistant_id, llm_chat_id,
+                title, preview, message_count, last_message_at,
+                deleted_at, created_at, updated_at
+            FROM ai_chat_sessions
+            WHERE session_uuid = ?
+            LIMIT 1
+            ''',
+            (session_uuid,)
+        ).fetchone()
+
+    if not row:
+        return None
+
+    return {
+        'sessionUuid': row['session_uuid'],
+        'userId': row['user_id'],
+        'openid': row['openid'],
+        'assistantId': row['assistant_id'],
+        'llmChatId': row['llm_chat_id'],
+        'title': row['title'],
+        'preview': row['preview'],
+        'messageCount': row['message_count'],
+        'lastMessageAt': row['last_message_at'],
+        'deletedAt': row['deleted_at'],
+        'createdAt': row['created_at'],
+        'updatedAt': row['updated_at'],
+    }
+
+
+def list_chat_sessions(
+    *,
+    openid: Optional[str] = None,
+    user_id: Optional[str] = None,
+    assistant_id: Optional[str] = None,
+    limit: int = 50
+) -> list[dict[str, Any]]:
+    if not openid and not user_id:
+        return []
+
+    where_clauses = ['deleted_at IS NULL']
+    params: list[Any] = []
+
+    if openid:
+        where_clauses.append('openid = ?')
+        params.append(openid)
+    elif user_id:
+        where_clauses.append('user_id = ?')
+        params.append(user_id)
+
+    if assistant_id:
+        where_clauses.append('assistant_id = ?')
+        params.append(assistant_id)
+
+    params.append(limit)
+
+    sql = f'''
+        SELECT
+            session_uuid, user_id, openid, assistant_id, llm_chat_id,
+            title, preview, message_count, last_message_at,
+            deleted_at, created_at, updated_at
+        FROM ai_chat_sessions
+        WHERE {' AND '.join(where_clauses)}
+        ORDER BY last_message_at DESC, updated_at DESC
+        LIMIT ?
+    '''
+
+    with get_connection() as connection:
+        rows = connection.execute(sql, tuple(params)).fetchall()
+
+    return [
+        {
+            'sessionUuid': row['session_uuid'],
+            'userId': row['user_id'],
+            'openid': row['openid'],
+            'assistantId': row['assistant_id'],
+            'llmChatId': row['llm_chat_id'],
+            'title': row['title'],
+            'preview': row['preview'],
+            'messageCount': row['message_count'],
+            'lastMessageAt': row['last_message_at'],
+            'deletedAt': row['deleted_at'],
+            'createdAt': row['created_at'],
+            'updatedAt': row['updated_at'],
+        }
+        for row in rows
+    ]
+
+
+def save_chat_message(
+    *,
+    message_uuid: str,
+    session_uuid: str,
+    role: str,
+    message_type: str = 'text',
+    content: Optional[str] = None,
+    media_url: Optional[str] = None,
+    file_name: Optional[str] = None,
+    file_size: Optional[int] = None,
+    extra_json: Optional[str] = None,
+    llm_reply_id: Optional[str] = None
+) -> dict[str, Any]:
+    timestamp = now_iso()
+    with get_connection() as connection:
+        existing = connection.execute(
+            '''
+            SELECT COALESCE(MAX(sort_no), 0) AS max_sort
+            FROM ai_chat_messages
+            WHERE session_uuid = ? AND deleted_at IS NULL
+            ''',
+            (session_uuid,)
+        ).fetchone()
+        next_sort = int(existing['max_sort'] or 0) + 1
+
+        connection.execute(
+            '''
+            INSERT INTO ai_chat_messages (
+                message_uuid, session_uuid, role, message_type, content,
+                media_url, file_name, file_size, extra_json, sort_no,
+                llm_reply_id, deleted_at, created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''',
+            (
+                message_uuid,
+                session_uuid,
+                role,
+                message_type,
+                content,
+                media_url,
+                file_name,
+                file_size,
+                extra_json,
+                next_sort,
+                llm_reply_id,
+                None,
+                timestamp,
+            )
+        )
+
+    return get_chat_message_by_uuid(message_uuid) or {
+        'messageUuid': message_uuid,
+        'sessionUuid': session_uuid,
+        'role': role,
+        'messageType': message_type,
+        'content': content,
+        'mediaUrl': media_url,
+        'fileName': file_name,
+        'fileSize': file_size,
+        'extraJson': extra_json,
+        'sortNo': next_sort,
+        'llmReplyId': llm_reply_id,
+        'deletedAt': None,
+        'createdAt': timestamp,
+    }
+
+
+def get_chat_message_by_uuid(message_uuid: str) -> Optional[dict[str, Any]]:
+    with get_connection() as connection:
+        row = connection.execute(
+            '''
+            SELECT
+                message_uuid, session_uuid, role, message_type, content,
+                media_url, file_name, file_size, extra_json, sort_no,
+                llm_reply_id, deleted_at, created_at
+            FROM ai_chat_messages
+            WHERE message_uuid = ?
+            LIMIT 1
+            ''',
+            (message_uuid,)
+        ).fetchone()
+
+    if not row:
+        return None
+
+    return {
+        'messageUuid': row['message_uuid'],
+        'sessionUuid': row['session_uuid'],
+        'role': row['role'],
+        'messageType': row['message_type'],
+        'content': row['content'],
+        'mediaUrl': row['media_url'],
+        'fileName': row['file_name'],
+        'fileSize': row['file_size'],
+        'extraJson': row['extra_json'],
+        'sortNo': row['sort_no'],
+        'llmReplyId': row['llm_reply_id'],
+        'deletedAt': row['deleted_at'],
+        'createdAt': row['created_at'],
+    }
+
+
+def list_chat_messages(
+    session_uuid: str,
+    *,
+    include_deleted: bool = False
+) -> list[dict[str, Any]]:
+    where = 'session_uuid = ?'
+    params: list[Any] = [session_uuid]
+    if not include_deleted:
+        where += ' AND deleted_at IS NULL'
+
+    with get_connection() as connection:
+        rows = connection.execute(
+            f'''
+            SELECT
+                message_uuid, session_uuid, role, message_type, content,
+                media_url, file_name, file_size, extra_json, sort_no,
+                llm_reply_id, deleted_at, created_at
+            FROM ai_chat_messages
+            WHERE {where}
+            ORDER BY sort_no ASC, id ASC
+            ''',
+            tuple(params)
+        ).fetchall()
+
+    return [
+        {
+            'messageUuid': row['message_uuid'],
+            'sessionUuid': row['session_uuid'],
+            'role': row['role'],
+            'messageType': row['message_type'],
+            'content': row['content'],
+            'mediaUrl': row['media_url'],
+            'fileName': row['file_name'],
+            'fileSize': row['file_size'],
+            'extraJson': row['extra_json'],
+            'sortNo': row['sort_no'],
+            'llmReplyId': row['llm_reply_id'],
+            'deletedAt': row['deleted_at'],
+            'createdAt': row['created_at'],
+        }
+        for row in rows
+    ]
+
+
+def delete_chat_session(session_uuid: str) -> None:
+    timestamp = now_iso()
+    with get_connection() as connection:
+        connection.execute(
+            '''
+            UPDATE ai_chat_sessions
+            SET deleted_at = ?, updated_at = ?
+            WHERE session_uuid = ?
+            ''',
+            (timestamp, timestamp, session_uuid)
+        )
+
+
+def restore_chat_session(session_uuid: str) -> None:
+    timestamp = now_iso()
+    with get_connection() as connection:
+        connection.execute(
+            '''
+            UPDATE ai_chat_sessions
+            SET deleted_at = NULL, updated_at = ?
+            WHERE session_uuid = ?
+            ''',
+            (timestamp, session_uuid)
+        )
+
+
 def save_tongue_report(
     *,
     analysis_id: str,
@@ -432,6 +830,45 @@ def get_tongue_report(analysis_id: str) -> Optional[dict[str, Any]]:
     result = dict(row)
     result['report'] = json.loads(result.pop('report_json'))
     return result
+
+
+def list_tongue_reports(
+    user_id: str,
+    limit: int = 20,
+    offset: int = 0
+) -> list[dict[str, Any]]:
+    with get_connection() as connection:
+        rows = connection.execute(
+            '''
+            SELECT analysis_id, user_id, openid, report_json, tips, created_at
+            FROM tongue_report_records
+            WHERE user_id = ?
+            ORDER BY created_at DESC
+            LIMIT ? OFFSET ?
+            ''',
+            (user_id, limit, offset)
+        ).fetchall()
+
+    records = []
+    for row in rows:
+        item = dict(row)
+        item['report'] = json.loads(item.pop('report_json'))
+        records.append(item)
+    return records
+
+
+def count_tongue_reports(user_id: str) -> int:
+    with get_connection() as connection:
+        row = connection.execute(
+            '''
+            SELECT COUNT(*)
+            FROM tongue_report_records
+            WHERE user_id = ?
+            ''',
+            (user_id,)
+        ).fetchone()
+
+    return int(row[0]) if row else 0
 
 
 def save_appointment_reminder(
