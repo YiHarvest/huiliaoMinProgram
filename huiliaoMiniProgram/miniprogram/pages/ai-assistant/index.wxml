@@ -1,15 +1,19 @@
 <view class="ai-page">
   <view class="nav-bar" style="padding-top: {{statusBarHeight}}px; height: {{statusBarHeight + navBarHeight}}px;">
     <view class="nav-bar-left">
-      <view class="nav-btn nav-btn-menu" bindtap="openHistoryDrawer">
+      <view class="nav-menu-btn" bindtap="openHistoryDrawer">
         <view class="menu-icon">
           <view class="menu-bar"></view>
           <view class="menu-bar"></view>
           <view class="menu-bar"></view>
         </view>
+        <text class="nav-menu-text">历史对话</text>
       </view>
     </view>
-    <view class="nav-bar-title">智能助手</view>
+    <view class="nav-bar-center">
+      <text class="nav-bar-title">智能助手</text>
+      <text class="nav-bar-subtitle">内容由 AI 生成，仅供参考</text>
+    </view>
     <view class="nav-bar-right"></view>
   </view>
 
@@ -29,7 +33,7 @@
 
     <scroll-view class="history-list" scroll-y>
       <view class="history-empty" wx:if="{{chatSessions.length === 0}}">
-        <text class="history-empty-text">暂无历史对话</text>
+        <text class="history-empty-text">暂无历史对话，开始咨询后会自动保存。</text>
       </view>
 
       <view
@@ -64,7 +68,6 @@
 
         <view class="identity-main">
           <text class="identity-title">智能助手</text>
-          <text class="identity-subtitle">健康咨询 AI 助手</text>
           <text class="identity-desc">可咨询妇科、男科、备孕、健康评估、报告解读等相关问题。请描述您的问题，我会尽量帮您分析。</text>
 
           <view class="identity-tag-row">
@@ -154,6 +157,7 @@
                 </view>
               </view>
             </view>
+            <image class="message-avatar message-avatar-user" src="{{userAvatarUrl}}" mode="aspectFill" wx:if="{{item.role === 'user'}}"></image>
           </view>
         </view>
       </view>
@@ -258,5 +262,7 @@
         </view>
       </view>
     </view>
+
+    <text class="input-disclaimer">内容由AI生成，仅供参考。</text>
   </view>
 </view>

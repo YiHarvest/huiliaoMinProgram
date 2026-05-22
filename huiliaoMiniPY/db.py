@@ -15,6 +15,10 @@ if DB_TYPE == 'mysql':
         )
         from mysql_storage import (
             find_sendable_subscription_mysql,
+            get_comprehensive_report_source_preview_mysql,
+            generate_comprehensive_report_mysql,
+            list_comprehensive_reports_mysql,
+            get_comprehensive_report_detail_mysql,
             get_ai_reply_mysql,
             get_appointment_reminder_mysql,
             get_doctors_list_mysql,
@@ -232,6 +236,30 @@ def get_questionnaire_report(*args, **kwargs):
     if use_mysql():
         return get_questionnaire_report_mysql(*args, **kwargs)
     return get_questionnaire_report_sqlite(*args, **kwargs)
+
+
+def get_comprehensive_report_source_preview(*args, **kwargs):
+    if use_mysql():
+        return get_comprehensive_report_source_preview_mysql(*args, **kwargs)
+    raise NotImplementedError('comprehensive report preview is only available in MySQL mode')
+
+
+def generate_comprehensive_report(*args, **kwargs):
+    if use_mysql():
+        return generate_comprehensive_report_mysql(*args, **kwargs)
+    raise NotImplementedError('comprehensive report generation is only available in MySQL mode')
+
+
+def list_comprehensive_reports(*args, **kwargs):
+    if use_mysql():
+        return list_comprehensive_reports_mysql(*args, **kwargs)
+    raise NotImplementedError('comprehensive report list is only available in MySQL mode')
+
+
+def get_comprehensive_report_detail(*args, **kwargs):
+    if use_mysql():
+        return get_comprehensive_report_detail_mysql(*args, **kwargs)
+    raise NotImplementedError('comprehensive report detail is only available in MySQL mode')
 
 
 def list_questionnaire_records(*args, **kwargs):

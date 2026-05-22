@@ -1,3 +1,5 @@
+import { completePointsTask } from '../../utils/points-store'
+
 interface Profile {
   userId: number
   userCode: string
@@ -638,6 +640,7 @@ Page({
               title: '保存成功',
               icon: 'success'
             })
+            completePointsTask('profile_complete')
           } else {
             // 刷新失败，使用本地数据
             console.warn('[edit] 刷新资料失败，使用本地数据')

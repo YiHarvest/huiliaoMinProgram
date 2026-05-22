@@ -11,11 +11,14 @@
   </view>
 
   <scroll-view wx:else class="content" scroll-y>
-    <view class="info-card">
-      <view class="info-header">
-        <text class="info-badge">量表分析结果</text>
-        <text class="info-title">{{title || questionnaireName || '量表分析结果'}}</text>
-      </view>
+    <view class="ai-disclosure">
+      <text class="ai-disclosure-label">AI生成</text>
+      <text class="ai-disclosure-text">本页分析结果由人工智能生成，仅供参考，不能替代医生诊疗。</text>
+    </view>
+
+    <view class="hero-card">
+      <text class="info-badge">量表分析结果</text>
+      <text class="info-title">{{title || questionnaireName || '量表分析结果'}}</text>
 
       <view class="info-meta">
         <view class="meta-item" wx:if="{{doctorName}}">
@@ -54,9 +57,12 @@
     </view>
 
     <view class="section-card tip-card">
-      <text class="section-card-title">提示</text>
+      <view class="tip-header">
+        <view class="tip-icon">ℹ️</view>
+        <text class="section-card-title">温馨提示</text>
+      </view>
       <view class="tip-content">
-        <text class="tip-text">以下内容仅供医生参考，不构成诊断依据。</text>
+        <text class="tip-text">以上内容仅供医生参考，不构成诊断依据。</text>
       </view>
     </view>
   </scroll-view>

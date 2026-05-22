@@ -17,6 +17,10 @@ from db import (
     get_doctors_list,
     get_questionnaire_detail,
     get_questionnaire_options,
+    get_comprehensive_report_source_preview,
+    generate_comprehensive_report,
+    list_comprehensive_reports,
+    get_comprehensive_report_detail,
     get_questionnaire_record_detail,
     get_doctor_questionnaires_by_doctor,
     get_questionnaire_report,
@@ -51,14 +55,60 @@ from modules.tongue.handlers import TongueHandlers
 SUPPORTED_ASSISTANTS = {'xiaohui', 'chen'}
 
 
+def extract_reply_content(response_data: dict[str, Any]) -> tuple[str, str]:
+    """
+    兼容提取上游返回的回复内容。
+    依次尝试多个可能的字段路径，返回 (content, source_field)。
+    """
+    candidates = [
+        ('content', lambda d: d.get('content')),
+        ('answer', lambda d: d.get('answer')),
+        ('text', lambda d: d.get('text')),
+        ('response', lambda d: d.get('response')),
+        ('data.content', lambda d: d.get('data', {}).get('content') if isinstance(d.get('data'), dict) else None),
+        ('data.answer', lambda d: d.get('data', {}).get('answer') if isinstance(d.get('data'), dict) else None),
+        ('responseData.content', lambda d: d.get('responseData', {}).get('content') if isinstance(d.get('responseData'), dict) else None),
+        ('responseData.answer', lambda d: d.get('responseData', {}).get('answer') if isinstance(d.get('responseData'), dict) else None),
+        ('choices[0].message.content', lambda d: (
+            d.get('choices', [{}])[0].get('message', {}).get('content')
+            if isinstance(d.get('choices'), list) and len(d.get('choices', [])) > 0
+            else None
+        )),
+    ]
+
+    for field_name, extractor in candidates:
+        try:
+            content = extractor(response_data)
+            if content and str(content).strip():
+                return str(content).strip(), field_name
+        except (KeyError, IndexError, TypeError, AttributeError):
+            continue
+
+    return '', ''
+
+
 def call_fastgpt(question: str, chat_id: Optional[str] = None) -> dict[str, Any]:
+    print('=' * 80)
+    print('[FASTGPT-INPUT] call_fastgpt 被调用')
+    print(f'[FASTGPT-INPUT] question = {repr(question)}')
+    print(f'[FASTGPT-INPUT] question type = {type(question).__name__}')
+    print(f'[FASTGPT-INPUT] question 长度 = {len(question) if question else 0}')
+    print(f'[FASTGPT-INPUT] chatId = {repr(chat_id)}')
+    print('=' * 80)
+
     base_url = config['fastgpt']['base_url'].rstrip('/')
     url = f"{base_url}/v1/chat/completions"
 
     payload = {
         'chatId': chat_id or 'test',
         'stream': False,
-        'variables': {},
+        'variables': {
+            'question': question,
+            'input': question,
+            'query': question,
+            'userInput': question,
+            'userChatInput': question,
+        },
         'messages': [
             {
                 'role': 'user',
@@ -99,18 +149,26 @@ def call_fastgpt(question: str, chat_id: Optional[str] = None) -> dict[str, Any]
         print('DEBUG upstream Exception:', repr(e))
         raise
 
-    content = (
-        response_data.get('choices', [{}])[0]
-        .get('message', {})
-        .get('content', '')
-        .strip()
-    )
+    print('=' * 80)
+    print('[CHAT-DEBUG] 上游返回完整信息:')
+    print(f'[CHAT-DEBUG] response_data type: {type(response_data).__name__}')
+    print(f'[CHAT-DEBUG] response_data (前3000字符): {json.dumps(response_data, ensure_ascii=False)[:3000]}')
 
-    if not content:
-        raise RuntimeError('上游接口返回成功，但没有有效回复内容')
+    reply_content, source_field = extract_reply_content(response_data)
+
+    print(f'[CHAT-DEBUG] 兼容提取结果: content长度={len(reply_content)}, 来源字段={source_field}')
+    print(f'[CHAT-DEBUG] reply_content (前200字符): {reply_content[:200]}')
+    print('=' * 80)
+
+    if not reply_content:
+        all_keys = list(response_data.keys()) if isinstance(response_data, dict) else 'N/A (非dict类型)'
+        print(f'[CHAT-ERROR] 无法从上游返回中提取回复内容!')
+        print(f'[CHAT-ERROR] response_data 的顶层 keys: {all_keys}')
+        print(f'[CHAT-ERROR] 完整 response_data (前3000字符): {json.dumps(response_data, ensure_ascii=False)[:3000]}')
+        raise RuntimeError(f'上游接口返回成功，但没有有效回复内容 (尝试的字段路径均未找到内容, 顶层keys={all_keys})')
 
     return {
-        'content': content,
+        'content': reply_content,
         'chatId': response_data.get('id') or chat_id,
     }
 
@@ -298,15 +356,18 @@ class ChatProxyHandler(BaseHTTPRequestHandler):
     server_version = 'ChatProxy/2.0'
 
     def _write_json(self, data: Any, status: int = 200) -> None:
-        encoded = json.dumps(data, ensure_ascii=False, default=str).encode('utf-8')
-        self.send_response(status)
-        self.send_header('Content-Type', 'application/json; charset=utf-8')
-        self.send_header('Content-Length', str(len(encoded)))
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-        self.send_header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
-        self.end_headers()
-        self.wfile.write(encoded)
+        try:
+            encoded = json.dumps(data, ensure_ascii=False, default=str).encode('utf-8')
+            self.send_response(status)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.send_header('Content-Length', str(len(encoded)))
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+            self.send_header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+            self.end_headers()
+            self.wfile.write(encoded)
+        except BrokenPipeError:
+            print('客户端已断开连接，业务可能已处理完成')
 
     def do_OPTIONS(self) -> None:
         self._write_json({})
@@ -616,6 +677,51 @@ class ChatProxyHandler(BaseHTTPRequestHandler):
                 self._write_json({'error': str(exc)}, status=500)
             return
 
+        if path == '/api/comprehensive-reports/source-preview':
+            patient_id_raw = str((query.get('patientId') or query.get('userId') or [''])[0]).strip()
+            if not patient_id_raw:
+                self._write_json({'error': 'patientId 不能为空'}, status=400)
+                return
+
+            try:
+                result = get_comprehensive_report_source_preview(patient_id_raw)
+                self._write_json(result)
+            except ValueError as exc:
+                self._write_json({'error': str(exc)}, status=400)
+            except Exception as exc:
+                self._write_json({'error': str(exc)}, status=500)
+            return
+
+        if path == '/api/comprehensive-reports':
+            patient_id_raw = str((query.get('patientId') or query.get('userId') or [''])[0]).strip()
+            if not patient_id_raw:
+                self._write_json({'error': 'patientId 不能为空'}, status=400)
+                return
+
+            try:
+                result = list_comprehensive_reports(patient_id=patient_id_raw)
+                self._write_json(result)
+            except Exception as exc:
+                self._write_json({'error': str(exc)}, status=500)
+            return
+
+        if path == '/api/comprehensive-reports/detail':
+            report_id_raw = str((query.get('reportId') or [''])[0]).strip()
+            patient_id_raw = str((query.get('patientId') or query.get('userId') or [''])[0]).strip()
+            if not report_id_raw:
+                self._write_json({'error': 'reportId 不能为空'}, status=400)
+                return
+
+            try:
+                result = get_comprehensive_report_detail(
+                    report_id=report_id_raw,
+                    patient_id=patient_id_raw or None,
+                )
+                self._write_json(result)
+            except Exception as exc:
+                self._write_json({'error': str(exc)}, status=500)
+            return
+
         # 检查报告接口路由 - GET
         if path == '/api/tongue/list':
             TongueHandlers.handle_list_tongue_reports(self, query)
@@ -668,6 +774,24 @@ class ChatProxyHandler(BaseHTTPRequestHandler):
             return
 
         if self.handle_chat_history_post(path, payload):
+            return
+
+        if path == '/api/comprehensive-reports/generate':
+            patient_id_raw = str(
+                payload.get('patientId')
+                or payload.get('patient_id')
+                or payload.get('userId')
+                or ''
+            ).strip()
+            if not patient_id_raw:
+                self._write_json({'success': False, 'message': 'patientId 不能为空'}, status=400)
+                return
+
+            try:
+                result = generate_comprehensive_report(patient_id=patient_id_raw)
+                self._write_json(result)
+            except Exception as exc:
+                self._write_json({'success': False, 'message': str(exc)}, status=500)
             return
 
         if path == '/api/wxapp/login':
@@ -785,6 +909,8 @@ class ChatProxyHandler(BaseHTTPRequestHandler):
             doctor_id_raw = payload.get('doctorId') or payload.get('doctor_id')
             patient_id_raw = payload.get('patientId') or payload.get('patient_id')
             questionnaire_id_raw = payload.get('questionnaireId') or payload.get('questionnaire_id')
+            disease_type_raw = payload.get('diseaseType') or payload.get('disease_type') or ''
+            visit_type_raw = payload.get('visitType') or payload.get('visit_type') or ''
             
             print('解析后的 recordId:', record_id)
             print('解析后的 recordId 类型:', type(record_id))
@@ -1600,8 +1726,18 @@ class ChatProxyHandler(BaseHTTPRequestHandler):
 
             result = call_fastgpt(question, llm_chat_id)
             reply_id = uuid.uuid4().hex
+
+            print('[CHAT-API] call_fastgpt 返回结果:')
+            print(f'[CHAT-API]   result type: {type(result).__name__}')
+            print(f'[CHAT-API]   result keys: {list(result.keys()) if isinstance(result, dict) else "N/A"}')
+            print(f'[CHAT-API]   result 完整内容 (前3000字符): {json.dumps(result, ensure_ascii=False)[:3000]}')
+
             reply_content = str(result.get('content') or '').strip()
             final_chat_id = result.get('chatId') or llm_chat_id
+
+            print(f'[CHAT-API]   最终 reply_content 长度: {len(reply_content)}')
+            print(f'[CHAT-API]   最终 reply_content (前200字符): {reply_content[:200]}')
+            print(f'[CHAT-API]   final_chat_id: {final_chat_id}')
 
             try:
                 save_ai_reply(
@@ -1640,18 +1776,26 @@ class ChatProxyHandler(BaseHTTPRequestHandler):
 
             notify_result = None
             if owner_openid and owner_openid != 'anonymous':
-                notify_result = send_subscribe_message(
-                    openid=owner_openid,
-                    scene='ai_reply',
-                    biz_id=reply_id,
-                    context={
-                        'assistant_id': assistant_id,
-                        'assistant_name': '小惠' if assistant_id == 'xiaohui' else '陈主任',
-                        'reply_id': reply_id,
-                        'summary': safe_summary(reply_content),
-                        'event_time': '点击查看详情',
-                    },
-                )
+                try:
+                    notify_result = send_subscribe_message(
+                        openid=owner_openid,
+                        scene='ai_reply',
+                        biz_id=reply_id,
+                        context={
+                            'assistant_id': assistant_id,
+                            'assistant_name': '小惠' if assistant_id == 'xiaohui' else '陈主任',
+                            'reply_id': reply_id,
+                            'summary': safe_summary(reply_content),
+                            'event_time': '点击查看详情',
+                        },
+                    )
+                except Exception as notify_exc:
+                    print(f'[CHAT-API] ai_reply 订阅消息发送失败，已跳过: {notify_exc}')
+                    notify_result = {
+                        'success': False,
+                        'skipped': True,
+                        'error': str(notify_exc),
+                    }
 
             self._write_json(
                 {

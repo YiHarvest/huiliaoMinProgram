@@ -1,4 +1,4 @@
-import { formatDisplayDate } from '../../utils/date'
+﻿import { formatDisplayDate } from '../../utils/date'
 
 type TabKey = 'questionnaire' | 'tongue' | 'report' | 'comprehensive'
 
@@ -29,6 +29,28 @@ function cleanDisplayText(value: unknown): string {
     .trim()
 }
 
+function getComprehensiveDiseaseTypeName(value: unknown): string {
+  const diseaseType = String(value || '').trim()
+  const diseaseTypeMap: Record<string, string> = {
+    premature_ejaculation: '早泄',
+    male_sexual_dysfunction: '男性性功能障碍',
+    prostatitis: '前列腺炎',
+    infertility: '不孕不育',
+    gynecology_general: '妇科症状',
+    other_male_general: '男科一般问诊',
+    other_gynecology_general: '妇科一般问诊',
+    male_infertility: '男性不育',
+    female_infertility: '女性不孕',
+    male_sexual_function: '男性性功能问题',
+    other_male: '男科其他问题',
+    other_female: '妇科其他问题',
+    menstrual_disorder: '月经紊乱',
+    tcm_gyn: '中医妇科',
+    tcm_constitution: '中医体质'
+  }
+  return diseaseTypeMap[diseaseType] || diseaseType || '未填写'
+}
+
 Page({
   data: {
     tabs: [
@@ -42,7 +64,8 @@ Page({
     error: false,
     emptyText: '暂无量表记录',
     currentList: [] as DataItem[],
-    suppressTapUntil: 0
+    suppressTapUntil: 0,
+    comprehensiveGenerating: false
   },
 
   onLoad() {
@@ -129,7 +152,7 @@ Page({
       } else if (tab === 'report') {
         list = await this.loadReportData()
       } else if (tab === 'comprehensive') {
-        list = await this.loadComprehensiveData()
+        list = await this.loadComprehensiveDataFromApi()
       }
 
       this.setData({
@@ -336,21 +359,183 @@ Page({
     return statusMap[status] || status || '未知'
   },
 
-  async loadComprehensiveData(): Promise<DataItem[]> {
-    return [
-      {
-        id: 'mock-1',
-        icon: '📊',
-        title: '综合健康报告',
-        createdAt: '2026-04-21 10:51'
-      },
-      {
-        id: 'mock-2',
-        icon: '📊',
-        title: '综合健康报告',
-        createdAt: '2026-04-20 18:04'
+  formatComprehensiveStatus(status: string): string {
+    const statusMap: Record<string, string> = {
+      completed: '已完成',
+      failed: '生成失败',
+      generating: '生成中',
+      pending: '待生成'
+    }
+    return statusMap[status] || status || '未知'
+  },
+
+  async loadComprehensiveDataFromApi(): Promise<DataItem[]> {
+    try {
+      const userId = this.getUserId()
+      if (!userId) {
+        console.warn('[personal-data] 未找到 userId，无法加载综合报告')
+        return []
       }
-    ]
+
+      const response: any = await new Promise((resolve, reject) => {
+        wx.request({
+          url: `${API_BASE_URL}/api/comprehensive-reports?patientId=${userId}`,
+          method: 'GET',
+          success(res) { resolve(res) },
+          fail(err) { reject(err) }
+        })
+      })
+
+      const body = response.data || {}
+      if (response.statusCode === 200 && body?.success) {
+        const list = body.data?.list || []
+        return list.map((item: any, index: number) => ({
+          id: String(item.reportId || index),
+          icon: '🎯',
+          title: item.title || '综合健康报告',
+          createdAt: this.formatDate(item.createdAt),
+          summary: '',
+          reportId: String(item.reportId || ''),
+          doctorName: item.doctorName || '',
+          type: item.diseaseTypeName || getComprehensiveDiseaseTypeName(item.diseaseType),
+          status: this.formatComprehensiveStatus(item.status)
+        }))
+      }
+
+      console.error('[personal-data] 加载综合报告失败:', body?.message || body?.error || 'unknown error')
+      return []
+    } catch (error) {
+      console.error('[personal-data] 加载综合报告异常:', error)
+      return []
+    }
+  },
+
+  async handleGenerateComprehensiveReportClean() {
+    if (this.data.comprehensiveGenerating) {
+      return
+    }
+
+    const userId = this.getUserId()
+    if (!userId) {
+      wx.showToast({ title: '请先登录', icon: 'none' })
+      return
+    }
+
+    this.setData({ comprehensiveGenerating: true })
+
+    const finish = () => {
+      this.setData({ comprehensiveGenerating: false })
+    }
+
+    try {
+      const previewResponse: any = await new Promise((resolve, reject) => {
+        wx.request({
+          url: `${API_BASE_URL}/api/comprehensive-reports/source-preview?patientId=${userId}`,
+          method: 'GET',
+          success(res) { resolve(res) },
+          fail(err) { reject(err) }
+        })
+      })
+
+      const previewBody = previewResponse.data || {}
+      const previewData = previewBody.data || {}
+      if (previewResponse.statusCode !== 200 || previewBody.success === false || previewData.canGenerate === false) {
+        wx.showModal({
+          title: '暂无法生成综合报告',
+          content: previewBody.message || '当前医生、疾病类型和初诊/复诊对应的量表尚未填写完整，或暂未找到最新舌苔记录。',
+          showCancel: false
+        })
+        finish()
+        return
+      }
+
+      const sourceBasis = previewData.sourceBasis || {}
+      const questionnaireNames = Array.isArray(previewData.questionnaireNames)
+        ? previewData.questionnaireNames
+        : Array.isArray(sourceBasis.questionnaireNames)
+          ? sourceBasis.questionnaireNames
+          : []
+      const diseaseTypeName = previewData.diseaseTypeName || sourceBasis.diseaseTypeName || getComprehensiveDiseaseTypeName(previewData.diseaseType || sourceBasis.diseaseType)
+      const visitTypeName = sourceBasis.visitTypeName || (previewData.visitType === 'first' ? '初诊' : previewData.visitType === 'followup' ? '复诊' : previewData.visitType === 'referral' ? '转诊' : '未填写')
+
+      const previewContent = [
+        `量表来源：${sourceBasis.scaleSource || '当前医生、疾病类型和初诊/复诊对应量表组'}`,
+        `具体量表：${questionnaireNames.length ? questionnaireNames.join('、') : '暂无'}`,
+        `医生：${previewData.doctorName || sourceBasis.doctorName || ''}`,
+        `疾病类型：${diseaseTypeName || ''}`,
+        `就诊类型：${visitTypeName || ''}`,
+        `量表填写时间：${previewData.questionnaireCompletedAt || sourceBasis.questionnaireCompletedAt || ''}`,
+        `舌苔来源：${sourceBasis.tongueSource || '最新一次舌苔记录'}`,
+        `舌苔时间：${previewData.tongueCreatedAt || sourceBasis.tongueCreatedAt || ''}`,
+        `说明：${sourceBasis.description || '本报告基于以上信息生成，仅供健康信息整理和医生沟通参考。'}`
+      ].join('\n')
+
+      wx.showModal({
+        title: '生成综合报告',
+        content: previewContent,
+        confirmText: '确认生成',
+        cancelText: '取消',
+        success: async (modalRes) => {
+          if (!modalRes.confirm) {
+            finish()
+            return
+          }
+
+          try {
+            const generateResponse: any = await new Promise((resolve, reject) => {
+              wx.request({
+                url: `${API_BASE_URL}/api/comprehensive-reports/generate`,
+                method: 'POST',
+                header: { 'Content-Type': 'application/json' },
+                data: { patientId: String(userId) },
+                success(res) { resolve(res) },
+                fail(err) { reject(err) }
+              })
+            })
+
+            const generateBody = generateResponse.data || {}
+            if (generateResponse.statusCode === 200 && generateBody.success) {
+              wx.showToast({ title: '生成成功', icon: 'success' })
+              const reportId = generateBody.data?.reportId || ''
+              const refreshedList = await this.loadComprehensiveDataFromApi()
+              this.setData({
+                currentList: refreshedList,
+                error: false,
+                emptyText: this.getEmptyText('comprehensive')
+              })
+              if (reportId) {
+                wx.navigateTo({
+                  url: `/pages/comprehensive-report/comprehensive-report?reportId=${encodeURIComponent(reportId)}`
+                })
+              }
+            } else {
+              wx.showModal({
+                title: '生成失败',
+                content: generateBody.message || '综合报告生成失败，请稍后重试。',
+                showCancel: false
+              })
+            }
+          } catch (error) {
+            console.error('[personal-data] generate comprehensive report failed:', error)
+            wx.showModal({
+              title: '生成失败',
+              content: '综合报告生成失败，请稍后重试。',
+              showCancel: false
+            })
+          } finally {
+            finish()
+          }
+        }
+      })
+    } catch (error) {
+      console.error('[personal-data] preview comprehensive report failed:', error)
+      finish()
+      wx.showModal({
+        title: '生成失败',
+        content: '综合报告生成失败，请稍后重试。',
+        showCancel: false
+      })
+    }
   },
 
   handleView(e: WechatMiniprogram.TouchEvent) {
@@ -415,11 +600,17 @@ Page({
     }
 
     if (tab === 'comprehensive') {
-      wx.showModal({
-        title: '综合报告详情',
-        content: '综合报告详情功能开发中，后续将从数据库读取完整报告内容。',
-        showCancel: false
-      })
+      const reportId = item.reportId || item.id
+      if (reportId) {
+        wx.navigateTo({
+          url: `/pages/comprehensive-report/comprehensive-report?reportId=${encodeURIComponent(reportId)}`
+        })
+      } else {
+        wx.showToast({
+          title: '报告ID无效',
+          icon: 'none'
+        })
+      }
     }
   },
 

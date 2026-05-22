@@ -75,6 +75,10 @@
               <view wx:elif="{{item.iconType === 'profile'}}" class="icon-profile">
                 <text class="icon-emoji">👤</text>
               </view>
+
+              <view wx:elif="{{item.iconType === 'mall'}}" class="icon-mall">
+                <text class="icon-emoji">🎁</text>
+              </view>
             </view>
           </view>
 
@@ -103,7 +107,7 @@
           </view>
           <view class="intro-item">
             <view class="intro-number">4</view>
-            <view class="intro-text">整合各项数据——生成专属全面的健康画像。AI医生智能体会为您定制个性化调理与治疗方案，高效守护您的健康。</view>
+            <view class="intro-text">积分商城——签到抽奖兑换</view>
           </view>
         </view>
       </view>

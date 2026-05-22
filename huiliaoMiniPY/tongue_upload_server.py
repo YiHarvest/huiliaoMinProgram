@@ -220,6 +220,7 @@ class TongueUploadHandler(BaseHTTPRequestHandler):
                 self.write_json({'error': '视频大小不能超过 5MB'}, status=400)
                 return
 
+            print('[tongue-analysis] 分析开始')
             response = wait_for_health_analysis(video_path)
             result = response.get('result') or {}
             error_code = result.get('errorCode')
@@ -251,21 +252,33 @@ class TongueUploadHandler(BaseHTTPRequestHandler):
                     report=report,
                     tips=response.get('tips'),
                 )
+                print(f'[tongue-analysis] 舌苔记录保存成功 recordId={analysis_id}')
+            print('[tongue-analysis] 分析结果生成成功')
 
             notify_result = None
             if openid and analysis_id:
-                notify_result = send_subscribe_message(
-                    openid=openid,
-                    scene='tongue_result',
-                    biz_id=analysis_id,
-                    context={
-                        'analysis_id': analysis_id,
-                        'subject': safe_summary(report.get('overall', {}).get('subject') or '舌诊报告'),
-                        'summary': safe_summary(report.get('overall', {}).get('summary') or '舌诊结果已生成'),
-                        'event_time': '点击查看详情',
-                    },
-                )
+                try:
+                    notify_result = send_subscribe_message(
+                        openid=openid,
+                        scene='tongue_result',
+                        biz_id=analysis_id,
+                        context={
+                            'analysis_id': analysis_id,
+                            'subject': safe_summary(report.get('overall', {}).get('subject') or '舌诊报告'),
+                            'summary': safe_summary(report.get('overall', {}).get('summary') or '舌诊结果已生成'),
+                            'event_time': '点击查看详情',
+                        },
+                    )
+                except Exception as notify_exc:
+                    notify_message = str(notify_exc)
+                    if '模板' in notify_message and '未配置' in notify_message:
+                        print(f'[tongue-analysis] tongue_result 模板 ID 未配置，已跳过订阅消息发送: {notify_exc}')
+                    else:
+                        print(f'[tongue-analysis] 订阅消息发送失败，已跳过: {notify_exc}')
+                else:
+                    print('[tongue-analysis] tongue_result 订阅消息发送成功')
 
+            print('[tongue-analysis] 接口返回成功')
             self.write_json(
                 {
                     'success': True,

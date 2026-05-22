@@ -49,10 +49,10 @@ Component({
         route: '/pages/report-upload/report-upload'
       },
       {
-        iconType: 'profile',
-        title: '综合报告',
-        desc: '查看综合结果',
-        route: '/pages/comprehensive-report/comprehensive-report'
+        iconType: 'mall',
+        title: '积分商城',
+        desc: '签到抽奖兑换',
+        route: '/pages/points-mall/index'
       }
     ],
     modeEntries: modeArticles.map((article) => ({

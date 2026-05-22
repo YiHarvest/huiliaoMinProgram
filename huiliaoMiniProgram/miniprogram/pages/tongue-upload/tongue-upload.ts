@@ -1,3 +1,4 @@
+import { completePointsTask } from '../../utils/points-store'
 import { handleSubscribeAuthorization } from '../../utils/subscribe'
 
 const TONGUE_API_BASE_URL = 'https://miniprogram.huiliaoyiyuan.com'
@@ -301,6 +302,7 @@ Page({
     ],
     openid: '',
 
+    showCaptureNotice: true,
     showCameraMode: true,
     cameraStatus: 'init' as CameraStatusType,
     cameraTip: '正在启动摄像头',
@@ -324,6 +326,33 @@ Page({
     lastLightCheckTime: 0 as number,
     lightTip: '检测中...',
     frameCount: 0 as number
+  },
+
+  onCaptureNoticeConfirm(): void {
+    this.setData({
+      showCaptureNotice: false,
+      showCameraMode: true,
+      cameraStatus: 'init' as CameraStatusType,
+      cameraTip: '正在启动摄像头',
+      isRecording: false,
+      recordDuration: 0,
+      recordStartTime: 0,
+      canRecord: true,
+      faceRect: null,
+      frameCount: 0,
+      buttonState: 'idle' as ButtonState,
+      canStopRecording: false
+    })
+  },
+
+  onCaptureNoticeCancel(): void {
+    wx.navigateBack({
+      fail: () => {
+        wx.switchTab({
+          url: '/pages/home/home'
+        })
+      }
+    })
   },
 
   getUploadIdentity(): UploadIdentity {
@@ -1098,6 +1127,7 @@ Page({
           title: '分析完成',
           icon: 'success'
         })
+        completePointsTask('tongue_upload')
 
         const analysisId = report.analysisId || ''
         if (analysisId) {

@@ -1,0 +1,75 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="state-card">
+    <text class="state-text">正在加载兑换详情...</text>
+  </view>
+
+  <view wx:elif="{{!item}}" class="state-card">
+    <text class="state-title">未找到兑换商品</text>
+    <text class="state-text">请返回积分商城重新选择商品。</text>
+    <button class="back-btn" bindtap="onBackTap">返回商城</button>
+  </view>
+
+  <block wx:else>
+    <view class="hero-card">
+      <view class="hero-head">
+        <view>
+          <text class="hero-kicker">{{item.tag}}</text>
+          <text class="hero-title">{{item.name}}</text>
+        </view>
+        <button class="back-btn" bindtap="onBackTap">返回</button>
+      </view>
+
+      <text class="hero-desc">{{item.description}}</text>
+
+      <view class="price-row">
+        <text class="price-label">所需积分</text>
+        <text class="price-value">{{item.points}}</text>
+      </view>
+
+      <view class="compare-grid">
+        <view class="compare-item">
+          <text class="compare-label">当前积分</text>
+          <text class="compare-value">{{currentPoints}}</text>
+        </view>
+        <view class="compare-item">
+          <text class="compare-label">还差积分</text>
+          <text class="compare-value {{gapPoints > 0 ? 'compare-value--warn' : 'compare-value--ok'}}">{{gapPoints}}</text>
+        </view>
+      </view>
+
+      <button class="redeem-btn" bindtap="onRedeemTap" disabled="{{!canRedeem}}">
+        {{canRedeem ? '立即兑换' : '积分不足'}}
+      </button>
+
+      <text wx:if="{{successMessage}}" class="success-tip">{{successMessage}}</text>
+    </view>
+
+    <view class="section-card">
+      <text class="section-title">可补齐积分的任务</text>
+      <view class="task-list">
+        <view
+          wx:for="{{recommendedTasks}}"
+          wx:key="id"
+          class="task-item {{item.claimed ? 'task-item--claimed' : ''}}"
+        >
+          <view class="task-info">
+            <view class="task-title-row">
+              <text class="task-title">{{item.title}}</text>
+              <text class="task-points">+{{item.points}}</text>
+            </view>
+            <text class="task-desc">{{item.desc}}</text>
+          </view>
+          <button
+            class="task-action {{item.claimableToday ? 'task-action--active' : 'task-action--disabled'}}"
+            data-task-id="{{item.id}}"
+            data-route="{{item.route}}"
+            bindtap="onTaskTap"
+            disabled="{{!item.claimableToday && item.id !== 'view_rules'}}"
+          >
+            {{item.actionText}}
+          </button>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>

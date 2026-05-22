@@ -93,7 +93,7 @@
               下一题
             </button>
 
-            <button wx:else class="save-btn" bindtap="submitQuestionnaire">保存</button>
+            <button wx:else class="save-btn" bindtap="submitQuestionnaire" loading="{{submitting}}" disabled="{{submitting}}">保存</button>
           </view>
         </view>
 

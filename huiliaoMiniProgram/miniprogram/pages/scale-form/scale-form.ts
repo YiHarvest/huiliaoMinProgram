@@ -152,6 +152,10 @@ function matchesVisitStage(visitStage: string, selectedVisitType: string): boole
   return visitStage !== 'first_only'
 }
 
+function isFirstOnlyScale(item: ScaleItem): boolean {
+  return item.visitStage === 'first_only'
+}
+
 function buildDiseaseText(option: DiseaseOption | null): string {
   if (!option) {
     return ''
@@ -394,19 +398,26 @@ Component({
         const responseData = response.data as any
         const questionnaires = Array.isArray(responseData?.questionnaires) ? responseData.questionnaires : []
         const visibleScales = questionnaires.map(toScaleItem)
+        const isFirstVisit = Boolean(responseData.isFirstVisit)
+        const autoSelectedVisitType = isFirstVisit ? VISIT_TYPE_OPTIONS[0] : null
 
         this.setData({
           doctorId: String(responseData.doctorId || selectedDoctor.id),
           doctorName: String(responseData.doctorName || selectedDoctor.name),
-          isFirstVisit: Boolean(responseData.isFirstVisit),
+          isFirstVisit,
+          selectedVisitType: autoSelectedVisitType,
+          selectedVisitTypeText: autoSelectedVisitType ? autoSelectedVisitType.label : '',
+          visitTypePickerIndex: autoSelectedVisitType ? 0 : this.data.visitTypePickerIndex,
+          questionnaireVisitType: autoSelectedVisitType ? autoSelectedVisitType.value : '',
           allScaleList: visibleScales,
           scaleList: visibleScales,
           visibleScales,
           canShowScales: true,
           isLoading: false
+        }, () => {
+          this.syncDiseaseOptions()
+          this.refreshVisibleScales()
         })
-        this.syncDiseaseOptions()
-        this.refreshVisibleScales()
       } catch (error) {
         this.setData({ isLoading: false })
         wx.showToast({
@@ -507,12 +518,13 @@ Component({
     },
 
     refreshVisibleScales() {
-      const { allScaleList, selectedDisease, selectedVisitType } = this.data
+      const { allScaleList, selectedDisease, selectedVisitType, isFirstVisit } = this.data
       const diseaseValue = selectedDisease?.value || ''
       const visitTypeValue = selectedVisitType?.value || ''
+      const allowFirstOnlyWithoutDisease = Boolean(isFirstVisit && visitTypeValue === 'first')
 
       let filteredList = allScaleList.slice()
-      if (!diseaseValue || !visitTypeValue) {
+      if (!visitTypeValue) {
         this.setData({
           scaleList: [],
           visibleScales: [],
@@ -521,16 +533,30 @@ Component({
         return
       }
 
-      if (diseaseValue) {
-        filteredList = filteredList.filter((item) => matchesDisease(item.questionnaireName, diseaseValue))
-      }
+      filteredList = filteredList.filter((item) => {
+        if (!matchesVisitStage(item.visitStage, visitTypeValue)) {
+          return false
+        }
 
-      filteredList = filteredList.filter((item) => matchesVisitStage(item.visitStage, visitTypeValue))
+        if (allowFirstOnlyWithoutDisease && isFirstOnlyScale(item)) {
+          return true
+        }
+
+        if (!diseaseValue) {
+          return false
+        }
+
+        return matchesDisease(item.questionnaireName, diseaseValue)
+      })
 
       this.setData({
         scaleList: filteredList,
         visibleScales: filteredList,
-        canShowScales: Boolean(this.data.selectedDoctor && diseaseValue && selectedVisitType)
+        canShowScales: Boolean(
+          this.data.selectedDoctor &&
+          selectedVisitType &&
+          (diseaseValue || allowFirstOnlyWithoutDisease)
+        )
       })
     },
 
@@ -542,17 +568,26 @@ Component({
       this.setData({ selectedGender })
     },
 
-    validateBeforeStart() {
+    validateBeforeStart(questionnaireId: string) {
       if (!this.data.selectedDoctor) {
         return 'Please select a doctor'
       }
 
-      if (!this.data.selectedDisease) {
-        return 'Please select a disease type'
-      }
-
       if (!this.data.selectedVisitType) {
         return 'Please select a visit type'
+      }
+
+      const currentScale = this.data.visibleScales.find((item) => {
+        return (
+          item.questionnaireId === questionnaireId ||
+          item.templateId === questionnaireId ||
+          item.id === questionnaireId
+        )
+      })
+
+      const shouldSkipDiseaseCheck = Boolean(this.data.isFirstVisit && currentScale && isFirstOnlyScale(currentScale))
+      if (!this.data.selectedDisease && !shouldSkipDiseaseCheck) {
+        return 'Please select a disease type'
       }
 
       const patientId = getCurrentUserId()
@@ -564,15 +599,6 @@ Component({
     },
 
     async onStartScale(event: WechatMiniprogram.CustomEvent) {
-      const validationMessage = this.validateBeforeStart()
-      if (validationMessage) {
-        wx.showToast({
-          title: validationMessage,
-          icon: 'none'
-        })
-        return
-      }
-
       const questionnaireId = String(
         event.currentTarget.dataset.questionnaireId ||
         event.currentTarget.dataset.templateId ||
@@ -584,6 +610,15 @@ Component({
       if (!questionnaireId) {
         wx.showToast({
           title: 'Invalid questionnaire ID',
+          icon: 'none'
+        })
+        return
+      }
+
+      const validationMessage = this.validateBeforeStart(questionnaireId)
+      if (validationMessage) {
+        wx.showToast({
+          title: validationMessage,
           icon: 'none'
         })
         return

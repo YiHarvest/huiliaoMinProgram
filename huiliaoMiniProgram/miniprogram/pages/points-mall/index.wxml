@@ -1,0 +1,147 @@
+<view class="page">
+  <view class="hero-card">
+    <view class="hero-header">
+      <view>
+        <text class="hero-kicker">积分资产</text>
+        <text class="hero-title">慧疗积分商城</text>
+      </view>
+      <view class="history-chip" bindtap="onOpenHistory">
+        <text class="history-chip-text">积分明细</text>
+      </view>
+    </view>
+
+    <view class="balance-row">
+      <text class="balance-value">{{currentPoints}}</text>
+      <text class="balance-unit">积分</text>
+    </view>
+
+    <view class="hero-meta">
+      <view class="meta-item">
+        <text class="meta-label">今日已获得</text>
+        <text class="meta-value">{{todayEarned}}</text>
+      </view>
+      <view class="meta-item">
+        <text class="meta-label">连续签到</text>
+        <text class="meta-value">{{signInDays}} 天</text>
+      </view>
+      <view class="meta-item">
+        <text class="meta-label">今日上限剩余</text>
+        <text class="meta-value">{{dailyLimitRemaining}}</text>
+      </view>
+      <view class="meta-item">
+        <text class="meta-label">本周上限剩余</text>
+        <text class="meta-value">{{weeklyLimitRemaining}}</text>
+      </view>
+    </view>
+
+    <view class="hero-footer">
+      <text class="hero-note">{{initBadgeText}} · {{initSummaryText || '本地积分持续累计'}}</text>
+      <button class="hero-action secondary" bindtap="onOpenGame">幸运抽奖</button>
+    </view>
+  </view>
+
+  <view class="section-card">
+    <view class="section-head">
+      <view>
+        <text class="section-title">七天签到</text>
+        <text class="section-subtitle">连续签到可获得递增积分奖励，断签后从第 1 天重新开始。</text>
+      </view>
+      <button
+        class="section-action"
+        bindtap="onSignInTap"
+        disabled="{{signInButtonDisabled}}"
+      >
+        {{signInButtonText}}
+      </button>
+    </view>
+
+    <view class="signin-grid">
+      <view
+        wx:for="{{signInDaysView}}"
+        wx:key="day"
+        class="signin-item {{item.completed ? 'signin-item--done' : ''}} {{item.today ? 'signin-item--today' : ''}}"
+      >
+        <text class="signin-day">第 {{item.day}} 天</text>
+        <text class="signin-points">+{{item.points}}</text>
+        <text class="signin-status">{{item.today ? '今天' : item.completed ? '已领' : '待签'}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="section-card">
+    <view class="section-head">
+      <view>
+        <text class="section-title">今日任务</text>
+        <text class="section-subtitle">完成后自动进入积分明细，每日常规积分有上限。</text>
+      </view>
+    </view>
+
+    <view class="task-list">
+      <view
+        wx:for="{{tasks}}"
+        wx:key="id"
+        class="task-item {{item.claimed ? 'task-item--claimed' : ''}}"
+      >
+        <view class="task-info">
+          <view class="task-title-row">
+            <text class="task-title">{{item.title}}</text>
+            <text class="task-points">+{{item.points}}</text>
+          </view>
+          <text class="task-desc">{{item.desc}}</text>
+        </view>
+        <button
+          class="task-action {{item.claimableToday ? 'task-action--active' : 'task-action--disabled'}}"
+          data-task-id="{{item.id}}"
+          data-route="{{item.route}}"
+          bindtap="onTaskTap"
+          disabled="{{!item.claimableToday && item.id !== 'view_rules'}}"
+        >
+          {{item.actionText}}
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <view class="section-card">
+    <view class="section-head">
+      <view>
+        <text class="section-title">热门兑换</text>
+        <text class="section-subtitle">积分可兑换资料、权益和通用礼遇。</text>
+      </view>
+      <button class="section-link" bindtap="onOpenHistory">查看明细</button>
+    </view>
+
+    <view class="exchange-grid">
+      <view
+        wx:for="{{exchangeItems}}"
+        wx:key="id"
+        class="exchange-item"
+        data-item-id="{{item.id}}"
+        bindtap="onExchangeTap"
+      >
+        <view class="exchange-badge">{{item.tag}}</view>
+        <text class="exchange-name">{{item.name}}</text>
+        <text class="exchange-desc">{{item.description}}</text>
+        <view class="exchange-footer">
+          <text class="exchange-highlight">{{item.highlight}}</text>
+          <text class="exchange-points">{{item.points}} 积分</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="section-card rules-card">
+    <view class="section-head">
+      <view>
+        <text class="section-title">积分规则</text>
+        <text class="section-subtitle">查看规则可领取一次奖励，完成后会自动记录。</text>
+      </view>
+      <button class="section-action" data-task-id="view_rules" bindtap="onTaskTap">查看并领取</button>
+    </view>
+    <view class="rules-list">
+      <text class="rules-item">每日常规积分获取上限：60</text>
+      <text class="rules-item">每周常规积分获取上限：200</text>
+      <text class="rules-item">新手积分、上线体验积分和兑换退回不计入上限</text>
+    </view>
+  </view>
+</view>

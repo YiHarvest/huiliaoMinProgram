@@ -1,6 +1,11 @@
+page {
+  height: 100%;
+  background: #f5f7f6;
+}
+
 .page {
   min-height: 100vh;
-  background: #f6f8fb;
+  background: linear-gradient(180deg, #eefaf7 0%, #f5f7f6 24%, #f5f7f6 100%);
 }
 
 .content {
@@ -9,100 +14,162 @@
   padding: 24rpx;
 }
 
+.ai-disclosure {
+  margin-bottom: 20rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 24rpx;
+  background: linear-gradient(135deg, rgba(0, 168, 143, 0.12), rgba(95, 216, 197, 0.08));
+  border: 1rpx solid rgba(0, 168, 143, 0.14);
+}
+
+.ai-disclosure-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 4rpx 12rpx;
+  border-radius: 999rpx;
+  background: rgba(0, 168, 143, 0.16);
+  color: #007f6c;
+  font-size: 20rpx;
+  font-weight: 700;
+}
+
+.ai-disclosure-text {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 22rpx;
+  line-height: 34rpx;
+  color: #4f6f69;
+}
+
 .state {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #333;
-}
-
-.state-text {
-  margin-top: 18rpx;
-  font-size: 28rpx;
-  color: #666;
+  padding: 48rpx;
+  box-sizing: border-box;
 }
 
 .state-title {
   font-size: 34rpx;
   font-weight: 600;
-  color: #222;
+  color: #333;
+  margin-top: 24rpx;
+}
+
+.state-text {
+  margin-top: 16rpx;
+  font-size: 26rpx;
+  color: #888;
+  text-align: center;
+}
+
+.spinner {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  border: 4rpx solid rgba(0, 168, 143, 0.12);
+  border-top-color: #00a88f;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .retry-btn {
-  margin-top: 28rpx;
-  border-radius: 999rpx;
-  background: #2f8cff;
+  margin-top: 32rpx;
+  background: #00a88f;
   color: #fff;
+  border-radius: 999rpx;
+  padding: 16rpx 42rpx;
   font-size: 28rpx;
+  border: none;
 }
 
-.info-card,
+.hero-card,
 .section-card {
-  background: #fff;
-  border-radius: 24rpx;
+  background: #ffffff;
+  border-radius: 28rpx;
   padding: 28rpx;
-  box-sizing: border-box;
   box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.04);
-  margin-bottom: 20rpx;
 }
 
-.info-header {
-  margin-bottom: 24rpx;
+.hero-card {
+  margin-bottom: 20rpx;
+  background: linear-gradient(135deg, rgba(0, 168, 143, 0.12), rgba(255, 255, 255, 0.95));
 }
 
 .info-badge {
   display: inline-flex;
-  padding: 8rpx 18rpx;
+  padding: 6rpx 16rpx;
   border-radius: 999rpx;
-  background: #eaf4ff;
-  color: #2f8cff;
+  background: rgba(0, 168, 143, 0.12);
+  color: #008671;
   font-size: 22rpx;
-  margin-bottom: 14rpx;
+}
+
+.info-header {
+  margin-bottom: 16rpx;
 }
 
 .info-title {
   display: block;
-  font-size: 34rpx;
+  margin-top: 16rpx;
+  font-size: 38rpx;
   font-weight: 700;
-  color: #1f2937;
-  line-height: 1.4;
+  color: #1f2d2a;
 }
 
 .info-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16rpx 24rpx;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+  margin-top: 24rpx;
 }
 
 .meta-item {
-  min-width: 45%;
+  padding: 16rpx 20rpx;
+  border-radius: 20rpx;
+  background: rgba(255, 255, 255, 0.82);
 }
 
 .meta-label {
   display: block;
   font-size: 22rpx;
-  color: #8a94a6;
-  margin-bottom: 4rpx;
+  color: #8a9996;
 }
 
 .meta-value {
+  display: block;
+  margin-top: 8rpx;
   font-size: 26rpx;
-  color: #2b3440;
+  color: #24322f;
+  font-weight: 600;
 }
 
 .status-completed {
-  color: #11a36d;
+  color: #00a88f;
   font-weight: 600;
+}
+
+.section-card {
+  margin-top: 20rpx;
 }
 
 .section-card-title {
   display: block;
   font-size: 30rpx;
   font-weight: 700;
-  color: #1f2937;
-  margin-bottom: 20rpx;
+  color: #25312f;
+  margin-bottom: 18rpx;
+}
+
+.analysis-card {
+  border-left: none;
 }
 
 .analysis-content {
@@ -113,15 +180,15 @@
 
 .analysis-block {
   font-size: 28rpx;
-  line-height: 1.8;
-  color: #3c4654;
+  line-height: 1.75;
+  color: #465351;
   white-space: pre-wrap;
 }
 
 .analysis-block--title {
   font-size: 30rpx;
   font-weight: 700;
-  color: #1f2937;
+  color: #25312f;
   margin-top: 8rpx;
 }
 
@@ -132,11 +199,37 @@
 .analysis-text,
 .tip-text {
   font-size: 28rpx;
-  line-height: 1.8;
-  color: #3c4654;
+  line-height: 1.75;
+  color: #465351;
   white-space: pre-line;
 }
 
 .tip-card {
-  margin-bottom: 40rpx;
+  background: linear-gradient(135deg, rgba(255, 154, 60, 0.08), rgba(255, 255, 255, 0.95));
+  border: none;
+  border-left: none;
+}
+
+.tip-header {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-bottom: 14rpx;
+}
+
+.tip-icon {
+  font-size: 30rpx;
+  line-height: 1;
+}
+
+.tip-card .section-card-title {
+  color: #b37400;
+  font-size: 28rpx;
+  margin-bottom: 0;
+}
+
+.tip-text {
+  font-size: 26rpx;
+  line-height: 1.7;
+  color: #5a4c35;
 }

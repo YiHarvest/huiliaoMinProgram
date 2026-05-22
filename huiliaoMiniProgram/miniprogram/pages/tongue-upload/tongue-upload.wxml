@@ -1,8 +1,46 @@
 <view class="page">
+  <view class="capture-notice-mask" wx:if="{{showCaptureNotice}}">
+    <view class="capture-notice-card">
+      <view class="capture-notice-hero">
+        <view class="capture-notice-head">
+          <text class="capture-notice-title">上传要求</text>
+        </view>
+        <text class="capture-notice-sample-label">拍摄参考示意图</text>
+        <view class="capture-notice-image-wrap capture-notice-image-wrap--frame">
+          <view class="capture-notice-frame-line capture-notice-frame-line--top"></view>
+          <image class="capture-notice-image capture-notice-image--frame" src="/assets/0c120bfe1e041f5a69682f0f607c0d8a.jpg" mode="aspectFill"></image>
+          <view class="capture-notice-example-label">示例</view>
+          <view class="capture-notice-frame-line capture-notice-frame-line--bottom"></view>
+        </view>
+      </view>
+
+      <view class="capture-notice-list">
+        <view class="capture-notice-item">
+          <text class="capture-notice-dot"></text>
+          <text class="capture-notice-text">完整露出整个面部</text>
+        </view>
+        <view class="capture-notice-item">
+          <text class="capture-notice-dot"></text>
+          <text class="capture-notice-text">录制全程自然伸出舌头</text>
+        </view>
+        <view class="capture-notice-item">
+          <text class="capture-notice-dot"></text>
+          <text class="capture-notice-text">录制时长大于10秒</text>
+        </view>
+      </view>
+
+      <text class="capture-notice-tip">请保持正对镜头、光线充足，避免遮挡脸部和舌头。</text>
+
+      <view class="capture-notice-actions">
+        <button class="capture-notice-btn capture-notice-btn-secondary" bindtap="onCaptureNoticeCancel">返回</button>
+        <button class="capture-notice-btn capture-notice-btn-primary" bindtap="onCaptureNoticeConfirm">确认并继续</button>
+      </view>
+    </view>
+  </view>
   <!-- 摄像头录制模式 -->
   <view class="camera-mode" wx:if="{{showCameraMode}}">
     <view class="camera-header">
-      <text class="camera-title">健康筛查视频录制</text>
+      <text class="camera-title">请露出完整面部并伸舌录制</text>
       <text class="camera-subtitle">视频生成报告后自动删除不保留</text>
     </view>
 

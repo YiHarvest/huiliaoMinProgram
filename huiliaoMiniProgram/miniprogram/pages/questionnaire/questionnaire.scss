@@ -74,12 +74,24 @@
 
 .refill-btn {
   width: 100%;
-  height: 88rpx;
-  background-color: #1890ff;
+  height: 92rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 0;
+  line-height: 1;
+  background: linear-gradient(135deg, #1d9cff 0%, #1677ff 100%);
   color: #fff;
   border-radius: 999rpx;
   font-size: 28rpx;
   font-weight: 500;
+  letter-spacing: 1rpx;
+  box-shadow: 0 10rpx 24rpx rgba(24, 144, 255, 0.24);
+}
+
+.refill-btn::after {
+  border: none;
 }
 
 .progress-section {

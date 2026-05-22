@@ -1,0 +1,50 @@
+<view class="page">
+  <view class="hero-card">
+    <view class="hero-head">
+      <view>
+        <text class="hero-kicker">积分明细</text>
+        <text class="hero-title">记录每一次变化</text>
+      </view>
+      <button class="back-btn" bindtap="onBackTap">返回</button>
+    </view>
+
+    <view class="summary-grid">
+      <view class="summary-item">
+        <text class="summary-label">当前积分</text>
+        <text class="summary-value">{{balance}}</text>
+      </view>
+      <view class="summary-item">
+        <text class="summary-label">今日获得</text>
+        <text class="summary-value">{{todayEarned}}</text>
+      </view>
+      <view class="summary-item">
+        <text class="summary-label">本周获得</text>
+        <text class="summary-value">{{weeklyEarned}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="section-card">
+    <text class="section-title">全部记录</text>
+    <view wx:if="{{history && history.length}}" class="history-list">
+      <view wx:for="{{history}}" wx:key="id" class="history-item">
+        <view class="history-main">
+          <view class="history-head">
+            <text class="history-title">{{item.title}}</text>
+            <text class="history-delta {{item.deltaClass}}">{{item.deltaText}}</text>
+          </view>
+          <view class="history-meta">
+            <text class="history-badge">{{item.sourceLabel}}</text>
+            <text class="history-time">{{item.createdAt}}</text>
+          </view>
+          <text class="history-note">{{item.note}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view wx:else class="empty-state">
+      <text class="empty-title">暂无积分记录</text>
+      <text class="empty-text">完成签到、任务、抽奖或兑换后，记录会自动出现在这里。</text>
+    </view>
+  </view>
+</view>

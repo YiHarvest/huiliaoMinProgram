@@ -303,7 +303,8 @@ view, text, image, scroll-view, swiper, swiper-item {
 .icon-clipboard,
 .icon-tongue,
 .icon-report,
-.icon-profile {
+.icon-profile,
+.icon-mall {
   position: absolute;
   inset: 0;
   display: flex;
@@ -330,6 +331,10 @@ view, text, image, scroll-view, swiper, swiper-item {
 
 .icon-profile {
   background: linear-gradient(135deg, #f0e6ff 0%, #e6d1ff 100%);
+}
+
+.icon-mall {
+  background: linear-gradient(135deg, #fff4e6 0%, #ffe8cc 100%);
 }
 
 .mode-overview-card {

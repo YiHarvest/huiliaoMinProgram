@@ -1,6 +1,9 @@
 import json
 import json
 import re
+import uuid
+import time
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Optional
 from datetime import datetime, timezone, timedelta
 import mysql.connector
@@ -31,6 +34,10 @@ def now_mysql() -> str:
 
 
 CHINA_TZ = timezone(timedelta(hours=8))
+
+QUESTIONNAIRE_AI_GENERATING_TEXT = 'AI分析生成中，请稍后查看'
+QUESTIONNAIRE_AI_FAILED_TEXT = 'AI分析生成失败，请稍后重试'
+QUESTIONNAIRE_AI_EXECUTOR = ThreadPoolExecutor(max_workers=2)
 
 
 def _to_int_or_none(value: Any) -> Optional[int]:
@@ -90,6 +97,35 @@ def _sanitize_questionnaire_text(text: Any) -> str:
     return normalized.strip()
 
 
+def _safe_summary_mysql(value: Any, limit: int = 20) -> str:
+    content = str(value or '').strip().replace('\n', ' ')
+    if len(content) <= limit:
+        return content
+    return f"{content[:max(limit - 3, 1)]}..."
+
+
+def _get_disease_type_name_mysql(disease_type: Any) -> str:
+    disease_type_text = str(disease_type or '').strip()
+    disease_type_map = {
+        'premature_ejaculation': '早泄',
+        'male_sexual_dysfunction': '男性性功能障碍',
+        'prostatitis': '前列腺炎',
+        'infertility': '不孕不育',
+        'gynecology_general': '妇科症状',
+        'other_male_general': '男科一般问诊',
+        'other_gynecology_general': '妇科一般问诊',
+        'male_infertility': '男性不育',
+        'female_infertility': '女性不孕',
+        'male_sexual_function': '男性性功能问题',
+        'other_male': '男科其他问题',
+        'other_female': '妇科其他问题',
+        'menstrual_disorder': '月经紊乱',
+        'tcm_gyn': '中医妇科',
+        'tcm_constitution': '中医体质',
+    }
+    return disease_type_map.get(disease_type_text, disease_type_text or '未填写')
+
+
 def _ensure_questionnaire_record_table_mysql(cursor) -> None:
     cursor.execute(
         '''
@@ -123,6 +159,172 @@ def _ensure_questionnaire_record_columns_mysql(cursor) -> None:
         except Error as exc:
             if getattr(exc, 'errno', None) not in (1060, 1091):
                 raise
+
+
+def _get_questionnaire_analysis_status_mysql(analysis_text: Any) -> str:
+    text = str(analysis_text or '').strip()
+    if not text or text == QUESTIONNAIRE_AI_GENERATING_TEXT:
+        return 'generating'
+    if text == QUESTIONNAIRE_AI_FAILED_TEXT:
+        return 'failed'
+    return 'completed'
+
+
+def _load_questionnaire_analysis_context_mysql(record_id: str) -> dict[str, Any]:
+    """
+    为异步 AI 分析重新查询记录、题目和医生信息。
+    """
+    record_id_str = str(record_id or '').strip()
+    if not record_id_str:
+        raise ValueError('recordId 不能为空')
+
+    with get_mysql_connection() as connection:
+        with get_mysql_cursor(connection) as cursor:
+            cursor.execute(
+                '''
+                SELECT
+                    record_id,
+                    questionnaire_id,
+                    questionnaire_name,
+                    doctor_id,
+                    patient_id,
+                    disease_type,
+                    visit_type,
+                    answers_json,
+                    analysis_text
+                FROM questionnaire_record
+                WHERE record_id = %s
+                LIMIT 1
+                ''',
+                (record_id_str,)
+            )
+            row = cursor.fetchone()
+            if not row:
+                raise ValueError(f'未找到量表记录 {record_id_str}')
+
+            (
+                record_id_value,
+                questionnaire_id,
+                questionnaire_name,
+                doctor_id,
+                patient_id,
+                disease_type,
+                visit_type,
+                answers_json,
+                analysis_text
+            ) = row
+
+            questions: list[dict[str, Any]] = []
+            template_id = str(questionnaire_id or '').strip()
+            if template_id:
+                detail = get_questionnaire_detail_with_binding_mysql(record_id_str)
+                if detail:
+                    questions = list(detail.get('questions') or [])
+                    if not questionnaire_name:
+                        questionnaire_name = detail.get('questionnaireName') or questionnaire_name
+                    if not template_id:
+                        template_id = str(detail.get('templateId') or '').strip()
+
+            doctor_name = ''
+            doctor_id_int = _to_int_or_none(doctor_id)
+            if doctor_id_int is not None:
+                cursor.execute(
+                    '''
+                    SELECT COALESCE(display_name, doctor_name, '')
+                    FROM doctor_profile
+                    WHERE id = %s
+                    LIMIT 1
+                    ''',
+                    (doctor_id_int,)
+                )
+                doctor_row = cursor.fetchone()
+                doctor_name = str(doctor_row[0]) if doctor_row and doctor_row[0] is not None else ''
+
+            answers = _json_loads_safe(answers_json, [])
+            if not isinstance(answers, list):
+                answers = []
+
+            base_analysis_text = _build_questionnaire_analysis_text(
+                str(questionnaire_name or ''),
+                questions,
+                answers
+            )
+
+            return {
+                'record_id': str(record_id_value),
+                'questionnaire_name': str(questionnaire_name or ''),
+                'questionnaire_id': str(template_id or ''),
+                'doctor_name': doctor_name,
+                'doctor_id': doctor_id_int,
+                'patient_id': _to_int_or_none(patient_id),
+                'disease_type': str(disease_type or ''),
+                'visit_type': str(visit_type or ''),
+                'answers_json': answers,
+                'questions': questions,
+                'existing_summary': base_analysis_text,
+                'analysis_text': str(analysis_text or '')
+            }
+
+
+def generate_questionnaire_analysis_async(record_id: Any) -> None:
+    """
+    后台异步生成量表 AI 分析。
+    """
+    record_id_str = str(record_id or '').strip()
+    if not record_id_str:
+        return
+
+    print(f'[scale-ai-async] record_id={record_id_str} step=start')
+    try:
+        context = _load_questionnaire_analysis_context_mysql(record_id_str)
+        ai_start_time = time.time()
+        ai_analysis_text = generate_questionnaire_analysis_by_ai(context)
+        ai_duration_ms = int((time.time() - ai_start_time) * 1000)
+        print(f'[scale-ai-async] record_id={record_id_str} step=ai_done cost_ms={ai_duration_ms}')
+
+        final_analysis_text = str(ai_analysis_text or '').strip() or str(context.get('existing_summary') or '').strip()
+        if not final_analysis_text:
+            final_analysis_text = QUESTIONNAIRE_AI_FAILED_TEXT
+
+        with get_mysql_connection() as connection:
+            with get_mysql_cursor(connection) as cursor:
+                cursor.execute(
+                    '''
+                    UPDATE questionnaire_record
+                    SET analysis_text = %s,
+                        updated_at = %s
+                    WHERE record_id = %s
+                    ''',
+                    (
+                        final_analysis_text,
+                        now_mysql(),
+                        record_id_str
+                    )
+                )
+                connection.commit()
+
+        print(f'[scale-ai-async] record_id={record_id_str} step=db_update_done')
+    except Exception as exc:
+        print(f'[scale-ai-async] record_id={record_id_str} step=failed error={exc}')
+        try:
+            with get_mysql_connection() as connection:
+                with get_mysql_cursor(connection) as cursor:
+                    cursor.execute(
+                        '''
+                        UPDATE questionnaire_record
+                        SET analysis_text = %s,
+                            updated_at = %s
+                        WHERE record_id = %s
+                        ''',
+                        (
+                            QUESTIONNAIRE_AI_FAILED_TEXT,
+                            now_mysql(),
+                            record_id_str
+                        )
+                    )
+                    connection.commit()
+        except Exception as update_exc:
+            print(f'[scale-ai-async] record_id={record_id_str} step=failed_update_error error={update_exc}')
 
 
 def _json_loads_safe(raw_value: Any, default: Any = None) -> Any:
@@ -867,7 +1069,9 @@ def submit_questionnaire_with_binding_mysql(
         visit_type=visit_type
     )
     if record_summary:
-        result['analysisText'] = record_summary.get('analysisText', '')
+        result['message'] = '保存成功，分析生成中'
+        result['analysisStatus'] = record_summary.get('analysisStatus', 'generating')
+        result['analysisText'] = record_summary.get('analysisText', QUESTIONNAIRE_AI_GENERATING_TEXT)
         result['questionnaireRecord'] = record_summary
 
     with get_mysql_connection() as connection:
@@ -916,38 +1120,20 @@ def save_questionnaire_record_mysql(
     disease_type: Optional[str] = None,
     visit_type: Optional[str] = None
 ) -> Optional[dict[str, Any]]:
-    """
-    保存量表原始答案和分析结果到 questionnaire_record。
-    """
+    record_id_str = str(record_id).strip()
     with get_mysql_connection() as connection:
         with get_mysql_cursor(connection) as cursor:
             _ensure_questionnaire_record_table_mysql(cursor)
             _ensure_questionnaire_record_columns_mysql(cursor)
             _ensure_questionnaire_record_columns_mysql(cursor)
 
-            detail = get_questionnaire_detail_with_binding_mysql(record_id)
+            detail = get_questionnaire_detail_with_binding_mysql(record_id_str)
             if not detail:
-                raise ValueError(f'未找到量表记录: {record_id}')
+                raise ValueError(f'未找到量表记录 {record_id_str}')
 
-            questions = detail.get('questions') or []
             questionnaire_name = str(detail.get('questionnaireName') or '')
             template_id = str(detail.get('templateId') or questionnaire_id or '')
-            doctor_name = str(detail.get('doctorName') or '')
-            if not doctor_name and doctor_id is not None:
-                cursor.execute(
-                    '''
-                    SELECT COALESCE(display_name, doctor_name, '')
-                    FROM doctor_profile
-                    WHERE id = %s
-                    LIMIT 1
-                    ''',
-                    (doctor_id,)
-                )
-                doctor_row = cursor.fetchone()
-                doctor_name = str(doctor_row[0]) if doctor_row and doctor_row[0] is not None else ''
-
             record_answers = answers if isinstance(answers, list) else []
-            base_analysis_text = _build_questionnaire_analysis_text(questionnaire_name, questions, record_answers)
             timestamp = now_mysql()
 
             cursor.execute(
@@ -964,7 +1150,7 @@ def save_questionnaire_record_mysql(
                     analysis_text,
                     created_at,
                     updated_at
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON DUPLICATE KEY UPDATE
                     questionnaire_id = VALUES(questionnaire_id),
                     questionnaire_name = VALUES(questionnaire_name),
@@ -977,7 +1163,7 @@ def save_questionnaire_record_mysql(
                     updated_at = VALUES(updated_at)
                 ''',
                 (
-                    str(record_id),
+                    record_id_str,
                     str(template_id),
                     questionnaire_name,
                     doctor_id,
@@ -985,66 +1171,53 @@ def save_questionnaire_record_mysql(
                     str(disease_type or '').strip() or None,
                     str(visit_type or '').strip() or None,
                     json.dumps(record_answers, ensure_ascii=False),
-                    base_analysis_text,
+                    QUESTIONNAIRE_AI_GENERATING_TEXT,
                     timestamp,
                     timestamp
                 )
             )
             connection.commit()
 
-            final_analysis_text = base_analysis_text
-            ai_error: Optional[Exception] = None
             try:
-                ai_analysis_text = generate_questionnaire_analysis_by_ai(
-                    {
-                        'questionnaire_name': questionnaire_name,
-                        'doctor_name': doctor_name,
-                        'patient_id': patient_id,
-                        'answers_json': record_answers,
-                        'questions': questions,
-                        'existing_summary': base_analysis_text,
-                    }
-                )
-                if ai_analysis_text.strip():
-                    final_analysis_text = ai_analysis_text.strip()
+                QUESTIONNAIRE_AI_EXECUTOR.submit(generate_questionnaire_analysis_async, record_id_str)
             except Exception as exc:
-                ai_error = exc
-                print(f'[questionnaire-ai] record_id={record_id} 生成失败: {exc}')
-                fallback_note = '分析生成中/生成失败，请稍后重试'
-                final_analysis_text = f'{base_analysis_text}\n\n{fallback_note}' if base_analysis_text else fallback_note
-
-            if ai_error is None and final_analysis_text != base_analysis_text:
-                print(f'[questionnaire-ai] record_id={record_id} 生成成功')
-
-            cursor.execute(
-                '''
-                UPDATE questionnaire_record
-                SET analysis_text = %s,
-                    updated_at = %s
-                WHERE record_id = %s
-                ''',
-                (
-                    final_analysis_text,
-                    now_mysql(),
-                    str(record_id)
-                )
-            )
-            connection.commit()
+                print(f'[scale-ai-async] record_id={record_id_str} step=submit_failed error={exc}')
+                try:
+                    with get_mysql_connection() as async_connection:
+                        with get_mysql_cursor(async_connection) as async_cursor:
+                            async_cursor.execute(
+                                '''
+                                UPDATE questionnaire_record
+                                SET analysis_text = %s,
+                                    updated_at = %s
+                                WHERE record_id = %s
+                                ''',
+                                (
+                                    QUESTIONNAIRE_AI_FAILED_TEXT,
+                                    now_mysql(),
+                                    record_id_str
+                                )
+                            )
+                            async_connection.commit()
+                except Exception as update_exc:
+                    print(f'[scale-ai-async] record_id={record_id_str} step=submit_failed_update_error error={update_exc}')
 
             return {
-                'recordId': str(record_id),
+                'recordId': record_id_str,
                 'questionnaireId': str(template_id),
                 'questionnaireName': questionnaire_name,
-                'analysisText': final_analysis_text,
+                'analysisStatus': 'generating',
+                'analysisText': QUESTIONNAIRE_AI_GENERATING_TEXT,
                 'answersJson': record_answers,
                 'doctorId': doctor_id,
                 'patientId': patient_id,
                 'createdAt': timestamp,
-                'updatedAt': now_mysql()
+                'updatedAt': timestamp
             }
 
 
 def list_questionnaire_records_mysql(
+
     *,
     user_id: Any,
     limit: int = 50,
@@ -1122,6 +1295,7 @@ def list_questionnaire_records_mysql(
                         'updatedAt': _format_datetime_shanghai(updated_at),
                         'summary': analysis_preview or '已填写完成',
                         'analysisText': analysis_text or '',
+                        'analysisStatus': _get_questionnaire_analysis_status_mysql(analysis_text),
                         'answersJson': _json_loads_safe(answers_json, []),
                     }
                 )
@@ -1237,6 +1411,7 @@ def get_questionnaire_record_detail_mysql(
                     'analysisText': analysis_text or '',
                     'analysis': analysis_text or '',
                     'result': analysis_text or '',
+                    'analysisStatus': _get_questionnaire_analysis_status_mysql(analysis_text),
                     'createdAt': _format_datetime_shanghai(created_at),
                     'updatedAt': _format_datetime_shanghai(updated_at),
                     'completedAt': _format_datetime_shanghai(created_at),
@@ -1426,48 +1601,54 @@ def submit_questionnaire_mysql(questionnaire_id: str, answers: dict[str, Any]) -
     import json
     import time
     import random
-    
+
+    t0 = time.time()
+    print(f"[scale-submit-time] step=request_start cost_ms=0")
+
     with get_mysql_connection() as connection:
         with get_mysql_cursor(connection) as cursor:
             # 开始事务
             connection.start_transaction()
-            
+
             try:
                 # 1. 首先检查记录是否存在
+                print(f"[scale-submit-time] step=query_record_start cost_ms={int((time.time()-t0)*1000)}")
                 cursor.execute('''
                     SELECT id, questionnaire_name
                     FROM crm_questionnaire_user_record
                     WHERE id = %s AND del_flag = '0'
                 ''', (questionnaire_id,))
-                
+
                 record = cursor.fetchone()
                 if not record:
                     raise ValueError(f"记录不存在: {questionnaire_id}")
-                
+
                 record_id, questionnaire_name = record
-                
+                print(f"[scale-submit-time] step=parse_payload_done cost_ms={int((time.time()-t0)*1000)}")
+
                 # 2. 逐题写入用户作答到 crm_questionnaire_user_subject_record
+                answers_count = 0
                 for answer in answers:
                     subject_id = answer.get('subjectId') or answer.get('id')
                     question_answers = answer.get('answers', [])
-                    
+
                     if not subject_id:
                         continue
-                    
+
                     # 获取题目信息
                     cursor.execute('''
-                        SELECT subject_type, subject_title, subject_content, enable_score, score_rules, 
+                        SELECT subject_type, subject_title, subject_content, enable_score, score_rules,
                                score, is_required, sort_order, apply_department, tenant_id
                         FROM crm_questionnaire_template_subject
                         WHERE id = %s AND del_flag = '0'
                     ''', (subject_id,))
-                    
+
                     subject = cursor.fetchone()
                     if not subject:
                         continue
-                    
+
                     subject_type, subject_title, subject_content, enable_score, score_rules, score, is_required, sort_order, apply_department, tenant_id = subject
-                    
+
                     # 计算得分
                     result_score = 0
                     if enable_score == 'Y' and score_rules:
@@ -1480,22 +1661,22 @@ def submit_questionnaire_mysql(questionnaire_id: str, answers: dict[str, Any]) -
                                         break
                         except:
                             pass
-                    
+
                     # 生成作答记录ID
                     subject_record_id = str(int(time.time() * 1000) + random.randint(1000, 9999))
-                    
+
                     # 构建用户答案内容
                     user_answer_content = {
                         "original": subject_content,
                         "answers": question_answers
                     }
-                    
+
                     # 插入或更新用户作答记录
                     cursor.execute('''
                         INSERT INTO crm_questionnaire_user_subject_record (
-                            id, record_id, subject_id, subject_type, subject_title, 
-                            file_num, subject_content, field_props, enable_score, score_rules, 
-                            score, is_base_subject, is_required, sort_order, apply_department, 
+                            id, record_id, subject_id, subject_type, subject_title,
+                            file_num, subject_content, field_props, enable_score, score_rules,
+                            score, is_base_subject, is_required, sort_order, apply_department,
                             del_flag, create_time, update_time, version, tenant_id
                         ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         ON DUPLICATE KEY UPDATE
@@ -1508,16 +1689,23 @@ def submit_questionnaire_mysql(questionnaire_id: str, answers: dict[str, Any]) -
                         result_score, '0', is_required, sort_order, apply_department,
                         '0', now_iso(), now_iso(), 1, tenant_id or 0
                     ))
-                
+                    answers_count += 1
+
+                print(f"[scale-submit-time] step=save_answers_done cost_ms={int((time.time()-t0)*1000)} answers_count={answers_count}")
+
                 # 3. 更新用户记录状态
                 cursor.execute('''
                     UPDATE crm_questionnaire_user_record
                     SET status = '2', update_time = %s
                     WHERE id = %s AND del_flag = '0'
                 ''', (now_iso(), record_id))
-                
+
+                print(f"[scale-submit-time] step=update_status_done cost_ms={int((time.time()-t0)*1000)}")
+
                 # 4. 提交事务
                 connection.commit()
+
+                print(f"[scale-submit-time] step=response_done cost_ms={int((time.time()-t0)*1000)}")
                 
                 # 5. 返回结果
                 return {
@@ -1535,6 +1723,1187 @@ def get_questionnaire_report_mysql(questionnaire_id: str) -> Optional[dict[str, 
     return result.get('data') if isinstance(result, dict) else None
 
 # 预约提醒相关操作
+def _ensure_comprehensive_report_record_table_mysql(cursor) -> None:
+    cursor.execute(
+        '''
+        CREATE TABLE IF NOT EXISTS comprehensive_report_record (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            report_id VARCHAR(64) NOT NULL,
+            patient_id BIGINT NOT NULL,
+            doctor_id BIGINT NULL,
+            doctor_name VARCHAR(255) NULL,
+            disease_type VARCHAR(255) NULL,
+            questionnaire_batch_id VARCHAR(64) NULL,
+            questionnaire_record_ids_json LONGTEXT NULL,
+            questionnaire_names_json LONGTEXT NULL,
+            questionnaire_completed_at DATETIME NULL,
+            tongue_report_id VARCHAR(64) NULL,
+            tongue_created_at DATETIME NULL,
+            report_text LONGTEXT NULL,
+            source_info_json LONGTEXT NULL,
+            source_basis_json LONGTEXT NULL,
+            report_status VARCHAR(32) NOT NULL DEFAULT 'pending',
+            model_name VARCHAR(128) NULL,
+            prompt_version VARCHAR(32) NULL,
+            error_msg TEXT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uk_comprehensive_report_id (report_id),
+            KEY idx_comprehensive_report_patient_created (patient_id, created_at),
+            KEY idx_comprehensive_report_doctor_created (doctor_id, created_at),
+            KEY idx_comprehensive_report_status_created (report_status, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        '''
+    )
+
+
+def _ensure_comprehensive_report_record_columns_mysql(cursor) -> None:
+    cursor.execute(
+        '''
+        SELECT COUNT(1)
+        FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name = 'comprehensive_report_record'
+          AND column_name = 'source_basis_json'
+        '''
+    )
+    row = cursor.fetchone()
+    exists = bool(row and row[0])
+    if exists:
+        return
+
+    try:
+        cursor.execute(
+            'ALTER TABLE comprehensive_report_record ADD COLUMN source_basis_json LONGTEXT NULL AFTER source_info_json'
+        )
+    except Error as exc:
+        if getattr(exc, 'errno', None) not in (1060, 1061, 1091):
+            raise
+
+
+def _normalize_comprehensive_group_key(doctor_id: Any, disease_type: Any) -> tuple[str, str]:
+    return (str(doctor_id or '').strip(), str(disease_type or '').strip())
+
+
+def _fetch_active_questionnaire_bindings_mysql(cursor, doctor_id: Any) -> list[dict[str, Any]]:
+    doctor_id_int = _to_int_or_none(doctor_id)
+    if doctor_id_int is None:
+        return []
+
+    cursor.execute(
+        '''
+        SELECT DISTINCT
+            b.questionnaire_id,
+            qt.questionnaire_name,
+            b.visit_stage,
+            b.sort_order
+        FROM doctor_questionnaire_bind b
+        JOIN doctor_profile d ON d.id = b.doctor_id
+        JOIN crm_questionnaire_template qt ON qt.id = b.questionnaire_id
+        WHERE b.doctor_id = %s
+          AND b.status = 1
+          AND d.status = 1
+          AND (qt.del_flag = '0' OR qt.del_flag IS NULL)
+          AND (qt.status = '0' OR qt.status IS NULL)
+        ORDER BY
+            CASE b.visit_stage
+                WHEN 'first_only' THEN 0
+                ELSE 1
+            END,
+            b.sort_order
+        ''',
+        (doctor_id_int,)
+    )
+    rows = cursor.fetchall() or []
+
+    bindings: list[dict[str, Any]] = []
+    seen_questionnaire_ids: set[str] = set()
+    for row in rows:
+        questionnaire_id, questionnaire_name, visit_stage, sort_order = row
+        questionnaire_id_text = str(questionnaire_id or '').strip()
+        if not questionnaire_id_text or questionnaire_id_text in seen_questionnaire_ids:
+            continue
+        seen_questionnaire_ids.add(questionnaire_id_text)
+        bindings.append(
+            {
+                'questionnaireId': questionnaire_id_text,
+                'questionnaireName': str(questionnaire_name or '').strip(),
+                'visitStage': str(visit_stage or '').strip(),
+                'sortOrder': int(sort_order or 0),
+            }
+        )
+
+    return bindings
+
+
+def _normalize_comprehensive_visit_type(visit_type: Any) -> str:
+    visit_type_key = str(visit_type or '').strip().lower()
+    if visit_type_key in {'first', 'first_visit', 'initial', 'initial_visit', 'new', '首次', '初诊'}:
+        return 'first'
+    if visit_type_key in {'followup', 'follow_up', 'review', 'revisit', '复诊', '随访'}:
+        return 'followup'
+    if visit_type_key in {'referral', 'referral_visit', '转诊'}:
+        return 'referral'
+    return visit_type_key
+
+
+def _normalize_comprehensive_questionnaire_name(name: Any) -> str:
+    normalized = str(name or '').strip().lower()
+    normalized = normalized.replace('（', '(').replace('）', ')')
+    normalized = re.sub(r'[\s\-–—_·,，.。:：;；!！?？【】\[\]“”"\']', '', normalized)
+    return normalized
+
+
+COMPREHENSIVE_DISEASE_KEYWORDS: dict[str, list[str]] = {
+    'male_infertility': ['不育', '男性不育', '精液', '生殖系统', '未孕'],
+    'male_sexual_function': ['不育症', '男性不育', '不育病史', '不育诊断', '精液'],
+    'male_sexual_dysfunction': ['性功能障碍', '勃起', '射精', '性欲'],
+    'prostatitis': ['前列腺炎', '前列腺', 'NIH-CPSI', 'I-PSS'],
+    'premature_ejaculation': ['早泄', 'PEDT'],
+    'other_male': ['问诊', '病史', '症状', '男性'],
+    'female_infertility': ['不孕', '妇科不孕', '不孕症', 'PCOS'],
+    'menstrual_disorder': ['月经不调', '月经', '经量', '周期'],
+    'other_female': ['妇科', '病史', '症状'],
+    'tcm_gyn': ['中医妇科预问诊'],
+    'tcm_constitution': ['中医体质辨识'],
+}
+
+
+def _matches_comprehensive_disease_questionnaire(questionnaire_name: Any, disease_type: Any) -> bool:
+    disease_key = str(disease_type or '').strip()
+    if not disease_key:
+        return True
+
+    text = _normalize_comprehensive_questionnaire_name(questionnaire_name)
+    keywords = COMPREHENSIVE_DISEASE_KEYWORDS.get(disease_key)
+    if not keywords:
+        return True
+
+    if disease_key in {'other_male', 'other_female'}:
+        blocked_keywords = [
+            keyword
+            for other_key, other_keywords in COMPREHENSIVE_DISEASE_KEYWORDS.items()
+            if other_key != disease_key and not other_key.startswith('other_')
+            for keyword in other_keywords
+        ]
+        normalized_blocked = [_normalize_comprehensive_questionnaire_name(keyword) for keyword in blocked_keywords]
+        return not any(keyword and keyword in text for keyword in normalized_blocked)
+
+    return any(_normalize_comprehensive_questionnaire_name(keyword) in text for keyword in keywords)
+
+
+def _build_comprehensive_required_questionnaires_mysql(
+    cursor,
+    *,
+    doctor_id: Any,
+    disease_type: Any,
+    visit_type: Any,
+) -> list[dict[str, Any]]:
+    bindings = _fetch_active_questionnaire_bindings_mysql(cursor, doctor_id)
+    disease_type_key = str(disease_type or '').strip()
+    visit_type_key = _normalize_comprehensive_visit_type(visit_type)
+
+    if disease_type_key:
+        bindings = [
+            binding
+            for binding in bindings
+            if _matches_comprehensive_disease_questionnaire(binding.get('questionnaireName'), disease_type_key)
+        ]
+
+    if visit_type_key == 'first':
+        return bindings
+
+    return [
+        binding
+        for binding in bindings
+        if str(binding.get('visitStage') or '').strip() != 'first_only'
+    ]
+
+
+def _fetch_questionnaire_groups_mysql(cursor, patient_id: Any) -> list[dict[str, Any]]:
+    patient_id_int = _to_int_or_none(patient_id)
+    if patient_id_int is None:
+        return []
+
+    cursor.execute(
+        '''
+        SELECT
+            qr.record_id,
+            qr.questionnaire_id,
+            qr.questionnaire_name,
+            qr.doctor_id,
+            COALESCE(dp.display_name, dp.doctor_name, '') AS doctor_name,
+            qr.disease_type,
+            qr.visit_type,
+            qr.analysis_text,
+            qr.created_at,
+            qr.updated_at
+        FROM questionnaire_record qr
+        LEFT JOIN doctor_profile dp ON dp.id = qr.doctor_id
+        WHERE qr.patient_id = %s
+          AND qr.doctor_id IS NOT NULL
+          AND qr.questionnaire_id IS NOT NULL
+          AND COALESCE(TRIM(qr.disease_type), '') <> ''
+        ORDER BY qr.created_at DESC, qr.record_id DESC
+        ''',
+        (patient_id_int,)
+    )
+    rows = cursor.fetchall() or []
+
+    groups_by_key: dict[tuple[str, str, str], dict[str, Any]] = {}
+    for row in rows:
+        (
+            record_id,
+            questionnaire_id,
+            questionnaire_name,
+            doctor_id,
+            doctor_name,
+            disease_type,
+            visit_type,
+            analysis_text,
+            created_at,
+            updated_at,
+        ) = row
+
+        doctor_key, disease_key = _normalize_comprehensive_group_key(doctor_id, disease_type)
+        visit_key = _normalize_comprehensive_visit_type(visit_type)
+        if not doctor_key or not disease_key:
+            continue
+        if not visit_key:
+            continue
+
+        group_key = (doctor_key, disease_key, visit_key)
+        group = groups_by_key.get(group_key)
+        if not group:
+            group = {
+                'doctorId': doctor_key,
+                'doctorName': str(doctor_name or '').strip(),
+                'diseaseType': disease_key,
+                'visitType': visit_key,
+                'latestCreatedAt': created_at,
+                'latestUpdatedAt': updated_at,
+                'records': [],
+                'recordMap': {},
+            }
+            groups_by_key[group_key] = group
+
+        if not group.get('doctorName') and doctor_name:
+            group['doctorName'] = str(doctor_name or '').strip()
+
+        record_item = {
+            'recordId': str(record_id),
+            'questionnaireId': str(questionnaire_id or '').strip(),
+            'questionnaireName': str(questionnaire_name or '').strip(),
+            'doctorId': doctor_key,
+            'doctorName': str(doctor_name or '').strip(),
+            'diseaseType': disease_key,
+            'visitType': visit_key,
+            'analysisText': str(analysis_text or '').strip(),
+            'createdAtRaw': created_at,
+            'updatedAtRaw': updated_at,
+            'createdAt': _format_datetime_shanghai(created_at),
+            'updatedAt': _format_datetime_shanghai(updated_at),
+        }
+        group['records'].append(record_item)
+
+        record_map = group['recordMap']
+        current_record = record_map.get(record_item['questionnaireId'])
+        if current_record is None:
+            record_map[record_item['questionnaireId']] = record_item
+        else:
+            current_created = current_record.get('createdAtRaw')
+            if current_created is None or (created_at is not None and created_at > current_created):
+                record_map[record_item['questionnaireId']] = record_item
+
+        latest_created = group.get('latestCreatedAt')
+        if latest_created is None or (created_at is not None and created_at > latest_created):
+            group['latestCreatedAt'] = created_at
+            group['latestUpdatedAt'] = updated_at
+
+    groups = list(groups_by_key.values())
+    groups.sort(
+        key=lambda item: (
+            item.get('latestCreatedAt') or datetime.min.replace(tzinfo=BEIJING_TZ),
+            item.get('latestUpdatedAt') or datetime.min.replace(tzinfo=BEIJING_TZ),
+            item.get('doctorId') or '',
+            item.get('diseaseType') or '',
+            item.get('visitType') or '',
+        ),
+        reverse=True,
+    )
+    return groups
+
+
+def _fetch_latest_tongue_report_mysql(patient_id: Any) -> Optional[dict[str, Any]]:
+    patient_id_int = _to_int_or_none(patient_id)
+    if patient_id_int is None:
+        return None
+
+    with get_mysql_connection() as connection:
+        from database.tongue_repository import _ensure_schema as _ensure_tongue_schema
+
+        _ensure_tongue_schema(connection)
+        with connection.cursor(dictionary=True) as cursor:
+            cursor.execute(
+                '''
+                SELECT
+                    id,
+                    analysis_id,
+                    user_id,
+                    openid,
+                    status,
+                    subject,
+                    summary,
+                    report_json,
+                    tips,
+                    error_message,
+                    created_at,
+                    updated_at,
+                    deleted_at
+                FROM tongue_report_records
+                WHERE user_id = %s
+                  AND status = 'completed'
+                  AND deleted_at IS NULL
+                ORDER BY created_at DESC, id DESC
+                LIMIT 1
+                ''',
+                (patient_id_int,)
+            )
+            row = cursor.fetchone()
+
+    if not row:
+        return None
+
+    row_id = row.get('id')
+    analysis_id = row.get('analysis_id')
+    user_id = row.get('user_id')
+    openid = row.get('openid')
+    status = row.get('status')
+    subject = row.get('subject')
+    summary = row.get('summary')
+    report_json = row.get('report_json')
+    tips = row.get('tips')
+    error_message = row.get('error_message')
+    created_at = row.get('created_at')
+    updated_at = row.get('updated_at')
+    deleted_at = row.get('deleted_at')
+
+    if isinstance(report_json, str):
+        try:
+            report_data = json.loads(report_json)
+        except Exception:
+            report_data = {}
+    elif isinstance(report_json, dict):
+        report_data = report_json
+    else:
+        report_data = {}
+
+    return {
+        'id': row_id,
+        'analysis_id': analysis_id,
+        'user_id': user_id,
+        'openid': openid,
+        'status': status,
+        'subject': subject,
+        'summary': summary,
+        'report_json': report_json,
+        'report': report_data,
+        'tips': tips,
+        'error_message': error_message,
+        'created_at': _format_datetime_shanghai(created_at),
+        'updated_at': _format_datetime_shanghai(updated_at),
+        'deleted_at': _format_datetime_shanghai(deleted_at),
+    }
+
+
+def get_comprehensive_report_source_preview_mysql(patient_id: Any) -> dict[str, Any]:
+    patient_id_int = _to_int_or_none(patient_id)
+    if patient_id_int is None:
+        raise ValueError('patientId 蹇呴』鏄湁鏁堢殑鏁存暟')
+
+    with get_mysql_connection() as connection:
+        with get_mysql_cursor(connection) as cursor:
+            _ensure_questionnaire_record_table_mysql(cursor)
+            _ensure_questionnaire_record_columns_mysql(cursor)
+            _ensure_comprehensive_report_record_table_mysql(cursor)
+
+            preview_result = _collect_comprehensive_report_source_bundle_mysql(cursor, patient_id_int)
+            if preview_result.get('canGenerate'):
+                preview_data = dict(preview_result.get('data') or {})
+                source_basis = dict(preview_data.get('sourceBasis') or {})
+                return {
+                    'success': True,
+                    'canGenerate': True,
+                    'data': {
+                        'patientId': preview_data.get('patientId', str(patient_id_int)),
+                        'doctorId': preview_data.get('doctorId', ''),
+                        'doctorName': preview_data.get('doctorName', ''),
+                        'diseaseType': preview_data.get('diseaseType', ''),
+                        'diseaseTypeName': preview_data.get('diseaseTypeName', _get_disease_type_name_mysql(preview_data.get('diseaseType'))),
+                        'questionnaireBatchId': preview_data.get('questionnaireBatchId', ''),
+                        'questionnaireRecordIds': preview_data.get('questionnaireRecordIds', []),
+                        'questionnaireNames': preview_data.get('questionnaireNames', []),
+                        'questionnaireCompletedAt': preview_data.get('questionnaireCompletedAt', ''),
+                        'tongueReportId': preview_data.get('tongueReportId', ''),
+                        'tongueSummary': preview_data.get('tongueSummary', ''),
+                        'tongueTitle': preview_data.get('tongueTitle', ''),
+                        'tongueCreatedAt': preview_data.get('tongueCreatedAt', ''),
+                        'basisText': preview_data.get('basisText', ''),
+                        'sourceBasis': source_basis,
+                    },
+                }
+
+            return {
+                'success': False,
+                'canGenerate': False,
+                'reason': preview_result.get('reason', 'NO_COMPLETE_QUESTIONNAIRE_GROUP'),
+                'message': preview_result.get('message', '暂未找到最近一次完整量表组，请先完成当前医生、疾病类型和初诊/复诊对应的全部量表。'),
+                'missingQuestionnaires': preview_result.get('missingQuestionnaires', []),
+                'partialQuestionnaireNames': preview_result.get('partialQuestionnaireNames', []),
+                'doctorId': preview_result.get('doctorId', ''),
+                'doctorName': preview_result.get('doctorName', ''),
+                'diseaseType': preview_result.get('diseaseType', ''),
+                'diseaseTypeName': preview_result.get('diseaseTypeName', _get_disease_type_name_mysql(preview_result.get('diseaseType'))),
+            }
+
+            groups = _fetch_questionnaire_groups_mysql(cursor, patient_id_int)
+            latest_complete_group: Optional[dict[str, Any]] = None
+
+            for group in groups:
+                bindings = _fetch_active_questionnaire_bindings_mysql(cursor, group.get('doctorId'))
+                if not bindings:
+                    continue
+
+                record_map = group.get('recordMap') or {}
+                selected_records: list[dict[str, Any]] = []
+                missing_bindings: list[dict[str, Any]] = []
+
+                for binding in bindings:
+                    questionnaire_id = str(binding.get('questionnaireId') or '').strip()
+                    record = record_map.get(questionnaire_id)
+                    if record:
+                        selected_records.append(record)
+                    else:
+                        missing_bindings.append(binding)
+
+                if not missing_bindings and bindings:
+                    questionnaire_completed_at_raw = max(
+                        (record.get('createdAtRaw') for record in selected_records if record.get('createdAtRaw') is not None),
+                        default=group.get('latestCreatedAt'),
+                    )
+                    latest_complete_group = {
+                        'doctorId': str(group.get('doctorId') or ''),
+                        'doctorName': str(group.get('doctorName') or ''),
+                        'diseaseType': str(group.get('diseaseType') or ''),
+                        'questionnaireRecordIds': [str(record.get('recordId') or '') for record in selected_records],
+                        'questionnaireNames': [str(record.get('questionnaireName') or '') for record in selected_records],
+                        'questionnaireCompletedAtRaw': questionnaire_completed_at_raw,
+                    }
+                    break
+
+            if not latest_complete_group:
+                return {
+                    'success': True,
+                    'canGenerate': False,
+                    'reason': 'NO_COMPLETE_QUESTIONNAIRE_GROUP',
+                    'message': '暂未找到完整量表组，请先完成当前医生、疾病类型和初诊/复诊对应的全部量表。',
+                }
+
+            tongue_report = _fetch_latest_tongue_report_mysql(patient_id_int)
+            if not tongue_report:
+                return {
+                    'success': True,
+                    'canGenerate': False,
+                    'reason': 'NO_TONGUE_REPORT',
+                    'message': '暂未找到舌苔报告，请先完成舌苔上传与分析。',
+                }
+
+            questionnaire_completed_at_raw = latest_complete_group.get('questionnaireCompletedAtRaw')
+            questionnaire_completed_at = _format_datetime_shanghai(questionnaire_completed_at_raw) if questionnaire_completed_at_raw else ''
+            basis_text = '本报告将基于最近一次完整量表组和最新一次舌苔记录生成。'
+            source_info = {
+                'patientId': str(patient_id_int),
+                'questionnaireSource': '最近一次完整量表组',
+                'doctorId': str(latest_complete_group.get('doctorId') or ''),
+                'doctorName': str(latest_complete_group.get('doctorName') or ''),
+                'diseaseType': str(latest_complete_group.get('diseaseType') or ''),
+                'diseaseTypeName': _get_disease_type_name_mysql(latest_complete_group.get('diseaseType')),
+                'questionnaireRecordIds': latest_complete_group.get('questionnaireRecordIds') or [],
+                'questionnaireNames': latest_complete_group.get('questionnaireNames') or [],
+                'questionnaireCompletedAt': questionnaire_completed_at,
+                'tongueSource': '最新一次舌苔记录',
+                'tongueReportId': str(tongue_report.get('analysis_id') or ''),
+                'tongueSummary': str(tongue_report.get('summary') or ''),
+                'tongueCreatedAt': str(tongue_report.get('created_at') or ''),
+                'basisText': basis_text,
+            }
+
+            return {
+                'success': True,
+                'canGenerate': True,
+                'data': source_info,
+            }
+
+
+def _collect_comprehensive_report_source_bundle_mysql(cursor, patient_id_int: int) -> dict[str, Any]:
+    groups = _fetch_questionnaire_groups_mysql(cursor, patient_id_int)
+    latest_incomplete_group: Optional[dict[str, Any]] = None
+    print(f'[comprehensive-source-preview] patientId={patient_id_int}')
+
+    for group in groups:
+        required_questionnaires = _build_comprehensive_required_questionnaires_mysql(
+            cursor,
+            doctor_id=group.get('doctorId'),
+            disease_type=group.get('diseaseType'),
+            visit_type=group.get('visitType'),
+        )
+        if not required_questionnaires:
+            continue
+
+        record_map = group.get('recordMap') or {}
+        selected_records: list[dict[str, Any]] = []
+        missing_bindings: list[dict[str, Any]] = []
+
+        for binding in required_questionnaires:
+            questionnaire_id = str(binding.get('questionnaireId') or '').strip()
+            record = record_map.get(questionnaire_id)
+            if record:
+                selected_records.append(record)
+            elif questionnaire_id:
+                missing_bindings.append(binding)
+            else:
+                missing_bindings.append(binding)
+
+        required_ids = [str(binding.get('questionnaireId') or '').strip() for binding in required_questionnaires]
+        required_names = [str(binding.get('questionnaireName') or '').strip() for binding in required_questionnaires]
+        existing_ids = [str(record.get('questionnaireId') or '').strip() for record in selected_records]
+        existing_names = [str(record.get('questionnaireName') or '').strip() for record in selected_records]
+        missing_ids = [str(binding.get('questionnaireId') or '').strip() for binding in missing_bindings]
+        missing_names = [str(binding.get('questionnaireName') or '').strip() for binding in missing_bindings]
+
+        print(f"[comprehensive-source-preview] doctorId={group.get('doctorId')}")
+        print(f"[comprehensive-source-preview] diseaseType={group.get('diseaseType')}")
+        print(f"[comprehensive-source-preview] visitType={group.get('visitType')}")
+        print(f'[comprehensive-source-preview] required ids/names={json.dumps({"ids": required_ids, "names": required_names}, ensure_ascii=False)}')
+        print(f'[comprehensive-source-preview] existing ids/names={json.dumps({"ids": existing_ids, "names": existing_names}, ensure_ascii=False)}')
+        print(f'[comprehensive-source-preview] missing ids/names={json.dumps({"ids": missing_ids, "names": missing_names}, ensure_ascii=False)}')
+
+        if missing_bindings:
+            if latest_incomplete_group is None:
+                latest_incomplete_group = {
+                        'doctorId': str(group.get('doctorId') or ''),
+                        'doctorName': str(group.get('doctorName') or ''),
+                        'diseaseType': str(group.get('diseaseType') or ''),
+                        'diseaseTypeName': _get_disease_type_name_mysql(group.get('diseaseType')),
+                        'visitType': str(group.get('visitType') or ''),
+                    'missingQuestionnaires': [
+                        {
+                            'questionnaireId': str(binding.get('questionnaireId') or ''),
+                            'questionnaireName': str(binding.get('questionnaireName') or ''),
+                        }
+                        for binding in missing_bindings
+                    ],
+                    'partialQuestionnaireNames': [
+                        str(record.get('questionnaireName') or '')
+                        for record in selected_records
+                    ],
+                }
+            continue
+
+        questionnaire_completed_at_raw = max(
+            (record.get('createdAtRaw') for record in selected_records if record.get('createdAtRaw') is not None),
+            default=group.get('latestCreatedAt'),
+        )
+        questionnaire_completed_at = (
+            _format_datetime_shanghai(questionnaire_completed_at_raw)
+            if questionnaire_completed_at_raw
+            else ''
+        )
+        questionnaire_record_ids = [str(record.get('recordId') or '') for record in selected_records]
+        questionnaire_names = [str(record.get('questionnaireName') or '') for record in selected_records]
+        questionnaire_batch_id_parts = [
+            str(patient_id_int),
+            str(group.get('doctorId') or ''),
+            str(group.get('diseaseType') or ''),
+            str(group.get('visitType') or ''),
+            questionnaire_completed_at.replace(' ', '').replace(':', '').replace('-', '') or 'unknown',
+        ]
+        questionnaire_batch_id = '-'.join(part for part in questionnaire_batch_id_parts if part)
+
+        tongue_report = _fetch_latest_tongue_report_mysql(patient_id_int)
+        if not tongue_report:
+            return {
+                'success': False,
+                'canGenerate': False,
+                'reason': 'NO_TONGUE_REPORT',
+                'message': '暂未找到舌苔记录，请先完成一次舌苔上传。',
+            }
+
+        source_basis = {
+            'scaleSource': '当前医生、疾病类型和初诊/复诊对应量表组',
+            'questionnaireNames': questionnaire_names,
+            'questionnaireRecordIds': questionnaire_record_ids,
+                    'doctorId': str(group.get('doctorId') or ''),
+                    'doctorName': str(group.get('doctorName') or ''),
+                    'diseaseType': str(group.get('diseaseType') or ''),
+                    'diseaseTypeName': _get_disease_type_name_mysql(group.get('diseaseType')),
+                    'visitType': str(group.get('visitType') or ''),
+            'questionnaireCompletedAt': questionnaire_completed_at,
+            'tongueSource': '最新一次舌苔记录',
+            'tongueReportId': str(tongue_report.get('analysis_id') or ''),
+            'tongueTitle': str(tongue_report.get('subject') or ''),
+            'tongueSummary': str(tongue_report.get('summary') or ''),
+            'tongueCreatedAt': str(tongue_report.get('created_at') or ''),
+            'description': '本报告基于以上信息生成，仅供健康信息整理和医生沟通参考。',
+        }
+
+        return {
+            'success': True,
+            'canGenerate': True,
+            'data': {
+                'patientId': str(patient_id_int),
+                'doctorId': str(group.get('doctorId') or ''),
+                'doctorName': str(group.get('doctorName') or ''),
+                'diseaseType': str(group.get('diseaseType') or ''),
+                'diseaseTypeName': _get_disease_type_name_mysql(group.get('diseaseType')),
+                'visitType': str(group.get('visitType') or ''),
+                'questionnaireBatchId': questionnaire_batch_id,
+                'questionnaireRecordIds': questionnaire_record_ids,
+                'questionnaireNames': questionnaire_names,
+                'questionnaireCompletedAt': questionnaire_completed_at,
+                'tongueReportId': str(tongue_report.get('analysis_id') or ''),
+                'tongueSummary': str(tongue_report.get('summary') or ''),
+                'tongueTitle': str(tongue_report.get('subject') or ''),
+                'tongueCreatedAt': str(tongue_report.get('created_at') or ''),
+                'basisText': '本报告将基于当前医生、疾病类型和初诊/复诊对应量表组以及最新一次舌苔记录生成。',
+                'sourceBasis': source_basis,
+                'selectedQuestionnaires': [
+                    {
+                        'recordId': str(record.get('recordId') or ''),
+                        'questionnaireId': str(record.get('questionnaireId') or ''),
+                        'questionnaireName': str(record.get('questionnaireName') or ''),
+                        'completedAt': str(record.get('createdAt') or ''),
+                    }
+                    for record in selected_records
+                ],
+                'tongueReport': tongue_report,
+            },
+        }
+
+    if latest_incomplete_group:
+        return {
+            'success': False,
+            'canGenerate': False,
+            'reason': 'NO_COMPLETE_QUESTIONNAIRE_GROUP',
+            'message': '暂未找到最近一次完整量表组，请先完成当前医生、疾病类型和初诊/复诊对应的全部量表。',
+            'missingQuestionnaires': latest_incomplete_group.get('missingQuestionnaires', []),
+            'partialQuestionnaireNames': latest_incomplete_group.get('partialQuestionnaireNames', []),
+            'doctorId': latest_incomplete_group.get('doctorId', ''),
+            'doctorName': latest_incomplete_group.get('doctorName', ''),
+            'diseaseType': latest_incomplete_group.get('diseaseType', ''),
+            'diseaseTypeName': latest_incomplete_group.get('diseaseTypeName', _get_disease_type_name_mysql(latest_incomplete_group.get('diseaseType'))),
+            'visitType': latest_incomplete_group.get('visitType', ''),
+        }
+
+    return {
+        'success': False,
+        'canGenerate': False,
+        'reason': 'NO_COMPLETE_QUESTIONNAIRE_GROUP',
+            'message': '暂未找到最近一次完整量表组，请先完成当前医生、疾病类型和初诊/复诊对应的全部量表。',
+        'missingQuestionnaires': [],
+        'visitType': '',
+    }
+
+
+def _sanitize_comprehensive_report_text(text: Any) -> str:
+    normalized = str(text or '').replace('**', '')
+    normalized = normalized.replace('```', '')
+    normalized = re.sub(r'(?m)^\s*#+\s*', '', normalized)
+    normalized = re.sub(r'\r\n?', '\n', normalized)
+    return normalized.strip()
+
+
+def _call_siliconflow_for_comprehensive_report_mysql(source_data: dict[str, Any]) -> str:
+    siliconflow = _get_siliconflow_config()
+    if not siliconflow.get('enabled', False):
+        raise RuntimeError('siliconflow 未启用')
+
+    api_key = str(siliconflow.get('api_key') or '').strip()
+    if not api_key:
+        raise RuntimeError('siliconflow.api_key 不能为空')
+
+    base_url = str(siliconflow.get('base_url') or 'https://api.siliconflow.cn/v1').rstrip('/')
+    chat_path = str(siliconflow.get('chat_completions_path') or '/chat/completions').strip()
+    if not chat_path.startswith('/'):
+        chat_path = f'/{chat_path}'
+    url = f'{base_url}{chat_path}'
+
+    model = str(siliconflow.get('model') or 'deepseek-ai/DeepSeek-V4-Flash')
+    try:
+        temperature = float(siliconflow.get('temperature', 0.3))
+    except Exception:
+        temperature = 0.3
+    try:
+        max_tokens = int(siliconflow.get('max_tokens', 1800))
+    except Exception:
+        max_tokens = 1800
+    max_tokens = min(max_tokens, 700)
+    timeout_seconds = int(siliconflow.get('timeout_seconds') or 60)
+
+    source_basis = dict(source_data.get('sourceBasis') or {})
+    questionnaires = list(source_data.get('selectedQuestionnaires') or [])
+    tongue_report = dict(source_data.get('tongueReport') or {})
+
+    system_prompt = (
+        '你是一名综合报告整理助手。'
+        '你只能基于用户填写的量表信息和舌苔记录做客观整理，不得输出诊断结论，不得给治疗方案，不得给用药建议，不得承诺疗效。'
+        '不要使用 Markdown 加粗符号，不要输出 **标题** 这种格式。'
+        '必须严格按以下顺序输出六个部分：'
+        '一、基础信息整理；二、量表结果摘要；三、舌苔报告摘要；四、综合观察；五、后续沟通建议；六、注意事项。'
+        '注意事项必须原样包含这句话：'
+        '本报告基于用户填写的量表信息和舌苔记录生成，仅用于健康信息整理和医生沟通参考，不构成诊断依据、治疗建议或用药指导。实际判断需结合医生面诊、体格检查及其他专业评估。'
+    )
+
+    user_payload = {
+        'sourceBasis': source_basis,
+        'questionnaires': questionnaires,
+        'tongueReport': {
+            'reportId': tongue_report.get('analysis_id') or '',
+            'title': tongue_report.get('subject') or '',
+            'summary': tongue_report.get('summary') or '',
+            'createdAt': tongue_report.get('created_at') or '',
+        },
+        'generationRequirements': [
+            '只做信息整理，不做诊断。',
+            '只使用已提供的量表和舌苔信息，不要补充未提供的事实。',
+            '不要输出 Markdown 加粗、代码块、表格或项目符号样式过重的装饰内容。',
+            '六个部分必须全部输出，且顺序固定。',
+        ],
+    }
+
+    payload = {
+        'model': model,
+        'temperature': temperature,
+        'max_tokens': max_tokens,
+        'stream': False,
+        'messages': [
+            {'role': 'system', 'content': system_prompt},
+            {'role': 'user', 'content': json.dumps(user_payload, ensure_ascii=False)},
+        ],
+    }
+
+    req = urllib_request.Request(
+        url=url,
+        data=json.dumps(payload, ensure_ascii=False).encode('utf-8'),
+        headers={
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {api_key}',
+        },
+        method='POST',
+    )
+
+    try:
+        with urllib_request.urlopen(req, timeout=timeout_seconds) as resp:
+            raw = resp.read().decode('utf-8', errors='replace')
+    except urllib_error.HTTPError as exc:
+        body = exc.read().decode('utf-8', errors='replace')
+        raise RuntimeError(f'SiliconFlow HTTP {exc.code}: {body[:500]}') from exc
+    except Exception as exc:
+        raise RuntimeError(f'SiliconFlow 调用失败: {exc}') from exc
+
+    try:
+        response_data = json.loads(raw)
+    except Exception as exc:
+        raise RuntimeError(f'SiliconFlow 返回不是有效 JSON: {raw[:500]}') from exc
+
+    content = (
+        response_data.get('choices', [{}])[0]
+        .get('message', {})
+        .get('content', '')
+    )
+    content = _sanitize_comprehensive_report_text(content)
+    if not content:
+        raise RuntimeError('SiliconFlow 返回内容为空')
+
+    return content
+
+
+def _parse_comprehensive_basis_json(raw_value: Any) -> dict[str, Any]:
+    if isinstance(raw_value, dict):
+        return raw_value
+    if isinstance(raw_value, str):
+        try:
+            parsed = json.loads(raw_value)
+            return parsed if isinstance(parsed, dict) else {}
+        except Exception:
+            return {}
+    return {}
+
+
+def generate_comprehensive_report_mysql(*, patient_id: Any) -> dict[str, Any]:
+    patient_id_int = _to_int_or_none(patient_id)
+    if patient_id_int is None:
+        return {
+            'success': False,
+            'errorCode': 'INVALID_PATIENT_ID',
+            'message': 'patientId 不能为空',
+        }
+
+    with get_mysql_connection() as connection:
+        with get_mysql_cursor(connection) as cursor:
+            _ensure_questionnaire_record_table_mysql(cursor)
+            _ensure_questionnaire_record_columns_mysql(cursor)
+            _ensure_comprehensive_report_record_table_mysql(cursor)
+            _ensure_comprehensive_report_record_columns_mysql(cursor)
+
+            bundle_result = _collect_comprehensive_report_source_bundle_mysql(cursor, patient_id_int)
+            if not bundle_result.get('canGenerate'):
+                return {
+                    'success': False,
+                    'errorCode': bundle_result.get('reason', 'NO_COMPLETE_QUESTIONNAIRE_GROUP'),
+                    'message': bundle_result.get('message', '暂未找到最近一次完整量表组，请先完成当前医生、疾病类型和初诊/复诊对应的全部量表。'),
+                    'missingQuestionnaires': bundle_result.get('missingQuestionnaires', []),
+                    'partialQuestionnaireNames': bundle_result.get('partialQuestionnaireNames', []),
+                }
+
+            source_data = dict(bundle_result.get('data') or {})
+            source_basis = dict(source_data.get('sourceBasis') or {})
+            source_basis['diseaseTypeName'] = source_basis.get('diseaseTypeName') or _get_disease_type_name_mysql(source_basis.get('diseaseType'))
+            doctor_id_int = _to_int_or_none(source_data.get('doctorId'))
+            disease_type = str(source_data.get('diseaseType') or '').strip()
+            questionnaire_batch_id = str(source_data.get('questionnaireBatchId') or '').strip()
+            questionnaire_record_ids = list(source_data.get('questionnaireRecordIds') or [])
+            tongue_report_id = str(source_data.get('tongueReportId') or '').strip()
+            questionnaire_record_ids_json = json.dumps(questionnaire_record_ids, ensure_ascii=False)
+
+            if not questionnaire_batch_id:
+                questionnaire_batch_id = f'{patient_id_int}-{doctor_id_int or ""}-{disease_type or ""}-{tongue_report_id or "unknown"}'
+
+            report_id = uuid.uuid4().hex
+            questionnaire_completed_at = str(source_data.get('questionnaireCompletedAt') or '')
+            tongue_created_at = str(source_data.get('tongueCreatedAt') or '')
+            doctor_name = str(source_data.get('doctorName') or '')
+            prompt_version = 'v1'
+            model_name = str((_get_siliconflow_config().get('model') or 'deepseek-ai/DeepSeek-V4-Flash'))
+            source_basis_json = json.dumps(source_basis or source_data, ensure_ascii=False)
+
+            now_value = now_mysql()
+            cursor.execute(
+                '''
+                INSERT INTO comprehensive_report_record (
+                    report_id,
+                    patient_id,
+                    doctor_id,
+                    doctor_name,
+                    disease_type,
+                    questionnaire_batch_id,
+                    questionnaire_record_ids_json,
+                    questionnaire_names_json,
+                    questionnaire_completed_at,
+                    tongue_report_id,
+                    tongue_created_at,
+                    report_text,
+                    source_info_json,
+                    source_basis_json,
+                    report_status,
+                    model_name,
+                    prompt_version,
+                    error_msg,
+                    created_at,
+                    updated_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ''',
+                (
+                    report_id,
+                    patient_id_int,
+                    doctor_id_int,
+                    doctor_name,
+                    disease_type,
+                    questionnaire_batch_id,
+                    questionnaire_record_ids_json,
+                    json.dumps(list(source_data.get('questionnaireNames') or []), ensure_ascii=False),
+                    questionnaire_completed_at or None,
+                    tongue_report_id or None,
+                    tongue_created_at or None,
+                    None,
+                    source_basis_json,
+                    source_basis_json,
+                    'generating',
+                    model_name,
+                    prompt_version,
+                    None,
+                    now_value,
+                    now_value,
+                ),
+            )
+            connection.commit()
+
+            try:
+                report_text = _call_siliconflow_for_comprehensive_report_mysql(source_data)
+                cursor.execute(
+                    '''
+                    UPDATE comprehensive_report_record
+                    SET report_text = %s,
+                        report_status = 'completed',
+                        error_msg = NULL,
+                        model_name = %s,
+                        prompt_version = %s,
+                        updated_at = %s
+                    WHERE report_id = %s
+                    ''',
+                    (
+                        report_text,
+                        model_name,
+                        prompt_version,
+                        now_mysql(),
+                        report_id,
+                    ),
+                )
+                connection.commit()
+                return {
+                    'success': True,
+                    'message': '综合报告生成成功',
+                    'data': {
+                        'reportId': report_id,
+                        'status': 'completed',
+                    },
+                }
+            except Exception as exc:
+                error_msg = str(exc)
+                cursor.execute(
+                    '''
+                    UPDATE comprehensive_report_record
+                    SET report_status = 'failed',
+                        error_msg = %s,
+                        model_name = %s,
+                        prompt_version = %s,
+                        updated_at = %s
+                    WHERE report_id = %s
+                    ''',
+                    (
+                        error_msg,
+                        model_name,
+                        prompt_version,
+                        now_mysql(),
+                        report_id,
+                    ),
+                )
+                connection.commit()
+                return {
+                    'success': False,
+                    'message': '综合报告生成失败，请稍后重试。',
+                }
+
+
+def list_comprehensive_reports_mysql(*, patient_id: Any) -> dict[str, Any]:
+    patient_id_int = _to_int_or_none(patient_id)
+    if patient_id_int is None:
+        return {
+            'success': False,
+            'message': 'patientId 不能为空',
+        }
+
+    with get_mysql_connection() as connection:
+        with get_mysql_cursor(connection) as cursor:
+            _ensure_comprehensive_report_record_table_mysql(cursor)
+            _ensure_comprehensive_report_record_columns_mysql(cursor)
+            cursor.execute(
+                '''
+                SELECT
+                    report_id,
+                    doctor_name,
+                    disease_type,
+                    report_text,
+                    report_status,
+                    created_at
+                FROM comprehensive_report_record
+                WHERE patient_id = %s
+                  AND report_status = 'completed'
+                ORDER BY created_at DESC, id DESC
+                ''',
+                (patient_id_int,)
+            )
+            rows = cursor.fetchall() or []
+
+    result_list: list[dict[str, Any]] = []
+    for row in rows:
+        report_id, doctor_name, disease_type, report_text, report_status, created_at = row
+        summary_text = _sanitize_comprehensive_report_text(report_text)
+        summary_line = summary_text.split('\n', 1)[0].strip() if summary_text else ''
+        result_list.append(
+            {
+                'reportId': str(report_id),
+                'title': '综合健康报告',
+                'doctorName': str(doctor_name or ''),
+                'diseaseType': str(disease_type or ''),
+                'diseaseTypeName': _get_disease_type_name_mysql(disease_type),
+                'summary': _safe_summary_mysql(summary_line, 80) if summary_line else '',
+                'status': str(report_status or ''),
+                'createdAt': _format_datetime_shanghai(created_at),
+            }
+        )
+
+    return {
+        'success': True,
+        'data': {
+            'list': result_list,
+            'total': len(result_list),
+        },
+    }
+
+
+def get_comprehensive_report_detail_mysql(*, report_id: Any, patient_id: Any = None) -> dict[str, Any]:
+    report_id_text = str(report_id or '').strip()
+    if not report_id_text:
+        return {
+            'success': False,
+            'message': 'reportId 不能为空',
+        }
+
+    patient_id_int = _to_int_or_none(patient_id)
+
+    with get_mysql_connection() as connection:
+        with get_mysql_cursor(connection) as cursor:
+            _ensure_comprehensive_report_record_table_mysql(cursor)
+            _ensure_comprehensive_report_record_columns_mysql(cursor)
+            if patient_id_int is None:
+                cursor.execute(
+                    '''
+                    SELECT
+                        report_id,
+                        patient_id,
+                        doctor_id,
+                        doctor_name,
+                        disease_type,
+                        questionnaire_batch_id,
+                        questionnaire_record_ids_json,
+                        questionnaire_names_json,
+                        questionnaire_completed_at,
+                        tongue_report_id,
+                        tongue_created_at,
+                        report_text,
+                        source_info_json,
+                        source_basis_json,
+                        report_status,
+                        model_name,
+                        prompt_version,
+                        error_msg,
+                        created_at,
+                        updated_at
+                    FROM comprehensive_report_record
+                    WHERE report_id = %s
+                    LIMIT 1
+                    ''',
+                    (report_id_text,)
+                )
+            else:
+                cursor.execute(
+                    '''
+                    SELECT
+                        report_id,
+                        patient_id,
+                        doctor_id,
+                        doctor_name,
+                        disease_type,
+                        questionnaire_batch_id,
+                        questionnaire_record_ids_json,
+                        questionnaire_names_json,
+                        questionnaire_completed_at,
+                        tongue_report_id,
+                        tongue_created_at,
+                        report_text,
+                        source_info_json,
+                        source_basis_json,
+                        report_status,
+                        model_name,
+                        prompt_version,
+                        error_msg,
+                        created_at,
+                        updated_at
+                    FROM comprehensive_report_record
+                    WHERE report_id = %s
+                      AND patient_id = %s
+                    LIMIT 1
+                    ''',
+                    (report_id_text, patient_id_int)
+                )
+
+            row = cursor.fetchone()
+
+    if not row:
+        return {
+            'success': False,
+            'message': '未找到综合报告',
+        }
+
+    (
+        row_report_id,
+        row_patient_id,
+        row_doctor_id,
+        row_doctor_name,
+        row_disease_type,
+        questionnaire_batch_id,
+        questionnaire_record_ids_json,
+        questionnaire_names_json,
+        questionnaire_completed_at,
+        tongue_report_id,
+        tongue_created_at,
+        report_text,
+        source_info_json,
+        source_basis_json,
+        report_status,
+        model_name,
+        prompt_version,
+        error_msg,
+        created_at,
+        updated_at,
+    ) = row
+
+    basis = _parse_comprehensive_basis_json(source_basis_json) or _parse_comprehensive_basis_json(source_info_json)
+    if basis:
+        basis['diseaseTypeName'] = basis.get('diseaseTypeName') or _get_disease_type_name_mysql(basis.get('diseaseType'))
+    if not basis:
+        questionnaire_names = _json_loads_safe(questionnaire_names_json, [])
+        if not isinstance(questionnaire_names, list):
+            questionnaire_names = []
+        questionnaire_record_ids = _json_loads_safe(questionnaire_record_ids_json, [])
+        if not isinstance(questionnaire_record_ids, list):
+            questionnaire_record_ids = []
+        basis = {
+            'scaleSource': '当前医生、疾病类型和初诊/复诊对应量表组',
+            'questionnaireNames': questionnaire_names,
+            'questionnaireRecordIds': questionnaire_record_ids,
+            'doctorName': str(row_doctor_name or ''),
+            'doctorId': str(row_doctor_id or ''),
+            'diseaseType': str(row_disease_type or ''),
+            'diseaseTypeName': _get_disease_type_name_mysql(row_disease_type),
+            'visitType': '',
+            'questionnaireCompletedAt': _format_datetime_shanghai(questionnaire_completed_at),
+            'tongueSource': '最新一次舌苔记录',
+            'tongueReportId': str(tongue_report_id or ''),
+            'tongueCreatedAt': _format_datetime_shanghai(tongue_created_at),
+            'description': '本报告基于以上信息生成，仅供健康信息整理和医生沟通参考。',
+        }
+
+    return {
+        'success': True,
+        'data': {
+            'reportId': str(row_report_id),
+            'title': '综合健康报告',
+            'doctorName': str(row_doctor_name or ''),
+            'diseaseType': str(row_disease_type or ''),
+            'diseaseTypeName': basis.get('diseaseTypeName') or _get_disease_type_name_mysql(row_disease_type),
+            'reportText': str(report_text or ''),
+            'status': str(report_status or ''),
+            'createdAt': _format_datetime_shanghai(created_at),
+            'basis': basis,
+            'modelName': str(model_name or ''),
+            'promptVersion': str(prompt_version or ''),
+            'errorMsg': str(error_msg or ''),
+        },
+    }
+
+
 def save_appointment_reminder_mysql(
     *, 
     appointment_id: str, 

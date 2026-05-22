@@ -64,18 +64,18 @@ type QueuedQuestion = {
 }
 
 const questionPool = [
-  '备孕前需要提前准备哪些事项？',
-  '月经不规律要先做什么检查？',
-  '白带异常应该先观察哪些情况？',
-  '男科备孕需要注意哪些事项？',
-  '精液检查前需要注意什么？',
-  '备孕期间同房频率怎么安排比较合适？',
-  '检查报告里有异常指标应该怎么看？',
-  '备孕期间需要补充哪些营养？',
-  '排卵期怎么判断比较准确？',
-  '男性长期熬夜会影响备孕吗？',
-  '妇科炎症会影响备孕吗？',
-  '备孕前夫妻双方需要做哪些检查？'
+  '备孕前要查什么？',
+  '月经不规律怎么办？',
+  '白带异常先看什么？',
+  '男科备孕要注意什么？',
+  '精液检查前注意啥？',
+  '同房频率怎么安排？',
+  '报告有异常怎么看？',
+  '备孕要补什么营养？',
+  '排卵期怎么判断？',
+  '熬夜影响备孕吗？',
+  '妇科炎症影响备孕吗？',
+  '夫妻备孕要查什么？'
 ]
 
 const GREETING =
@@ -132,6 +132,37 @@ function getRandomQuestions(): CommonQuestion[] {
     }))
 }
 
+function ensurePendingQueue(page: { pendingQueue?: QueuedQuestion[]; isProcessingQueue?: boolean }): QueuedQuestion[] {
+  if (!Array.isArray(page.pendingQueue)) {
+    page.pendingQueue = []
+  }
+  if (typeof page.isProcessingQueue !== 'boolean') {
+    page.isProcessingQueue = false
+  }
+  return page.pendingQueue
+}
+
+function resolveUserAvatarUrl(): string {
+  const app = getApp<any>()
+  const globalProfile = app?.globalData?.userProfile || {}
+  const cachedProfile = (() => {
+    const raw = wx.getStorageSync('USER_PROFILE')
+    if (!raw) {
+      return {}
+    }
+    if (typeof raw === 'string') {
+      try {
+        return JSON.parse(raw)
+      } catch {
+        return {}
+      }
+    }
+    return raw
+  })()
+
+  return globalProfile.avatarUrl || cachedProfile.avatarUrl || '/assets/icons/mine.png'
+}
+
 function formatFileSize(size: number): string {
   if (size < 1024) {
     return `${size}B`
@@ -175,6 +206,7 @@ Page({
   data: {
     commonQuestions: getRandomQuestions() as CommonQuestion[],
     messages: [createAssistantMessage('msg-welcome', GREETING, '智能助手')] as ChatMessage[],
+    userAvatarUrl: resolveUserAvatarUrl(),
     inputValue: '',
     canSend: false,
     isSending: false,
@@ -198,7 +230,16 @@ Page({
   onLoad(): void {
     this.initNavBarHeight()
     this.initVoicePlugin()
+    this.setData({
+      userAvatarUrl: resolveUserAvatarUrl()
+    })
     void this.loadChatSessions()
+  },
+
+  onShow(): void {
+    this.setData({
+      userAvatarUrl: resolveUserAvatarUrl()
+    })
   },
 
   initVoicePlugin(): void {
@@ -423,9 +464,10 @@ Page({
   },
 
   syncQueueState(): void {
+    const pendingQueue = ensurePendingQueue(this)
     this.setData({
       isSending: this.isProcessingQueue,
-      pendingCount: this.pendingQueue.length + (this.isProcessingQueue ? 1 : 0)
+      pendingCount: pendingQueue.length + (this.isProcessingQueue ? 1 : 0)
     })
   },
 
@@ -460,7 +502,7 @@ Page({
   },
 
   hasPendingWork(): boolean {
-    return this.isProcessingQueue || this.pendingQueue.length > 0
+    return this.isProcessingQueue || ensurePendingQueue(this).length > 0
   },
 
   async loadChatSessions(): Promise<void> {
@@ -652,14 +694,15 @@ Page({
   },
 
   enqueueQuestion(question: string, attachments: PendingAttachment[] = []): void {
+    const pendingQueue = ensurePendingQueue(this)
     const now = Date.now()
     const sessionId = this.getCurrentSessionId()
     const requestId = `queue-${now}-${Math.random().toString(36).slice(2, 8)}`
     const userMessageId = `msg-user-${now}`
     const assistantMessageId = `msg-assistant-${now}`
-    const queued = this.pendingQueue.length > 0 || this.isProcessingQueue
+    const queued = pendingQueue.length > 0 || this.isProcessingQueue
 
-    this.pendingQueue.push({
+    pendingQueue.push({
       requestId,
       question,
       sessionId,
@@ -691,11 +734,12 @@ Page({
   },
 
   async processQueue(): Promise<void> {
+    const pendingQueue = ensurePendingQueue(this)
     if (this.isProcessingQueue) {
       return
     }
 
-    const task = this.pendingQueue.shift()
+    const task = pendingQueue.shift()
     if (!task) {
       this.syncQueueState()
       return

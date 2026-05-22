@@ -1,3 +1,5 @@
+import { completePointsTask } from '../../utils/points-store'
+
 const API_BASE_URL = 'https://miniprogram.huiliaoyiyuan.com'
 
 type DoctorOption = {
@@ -285,6 +287,7 @@ Component({
           title: '报告已提交',
           icon: 'success'
         })
+        completePointsTask('report_upload')
         
         // 设置默认 tab 为检查报告，然后跳转到我的数据页面
         wx.setStorageSync('DATA_DEFAULT_TAB', 'report')

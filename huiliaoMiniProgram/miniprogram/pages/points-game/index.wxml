@@ -1,0 +1,123 @@
+<view class="page">
+  <view class="hero-card">
+    <view class="hero-head">
+      <view>
+        <text class="hero-kicker">幸运抽奖</text>
+        <text class="hero-title">抽奖转盘</text>
+      </view>
+    </view>
+
+    <view class="status-grid">
+      <view class="status-item">
+        <text class="status-label">当前积分</text>
+        <text class="status-value">{{balance}}</text>
+      </view>
+      <view class="status-item">
+        <text class="status-label">今日已抽</text>
+        <text class="status-value">{{drawCountToday}} / 5</text>
+      </view>
+      <view class="status-item">
+        <text class="status-label">免费机会</text>
+        <text class="status-value">{{freeDrawAvailable ? '可用' : '已用'}}</text>
+      </view>
+    </view>
+
+    <view class="mode-switch">
+      <view
+        class="mode-pill {{mode === 'wheel' ? 'mode-pill--active' : ''}}"
+        data-mode="wheel"
+        bindtap="switchMode"
+      >
+        大转盘
+      </view>
+      <view
+        class="mode-pill {{mode === 'scratch' ? 'mode-pill--active' : ''}}"
+        data-mode="scratch"
+        bindtap="switchMode"
+      >
+        刮刮乐
+      </view>
+    </view>
+  </view>
+
+  <block wx:if="{{mode === 'wheel'}}">
+    <view class="section-card wheel-card">
+      <view class="section-head">
+        <view>
+          <text class="section-title">幸运大转盘</text>
+          <text class="section-subtitle">点击中间按钮开始旋转。</text>
+        </view>
+      </view>
+
+      <view class="wheel-stage">
+        <view class="wheel-glow"></view>
+        <view class="wheel-pointer"></view>
+        <view class="wheel-disc {{wheelSpinning ? 'wheel-disc--spinning' : ''}}" style="transform: rotate({{wheelRotation}}deg);">
+          <view
+            wx:for="{{wheelSegments}}"
+            wx:key="name"
+            class="wheel-label"
+            style="{{item.style}}"
+          >
+            <view class="wheel-label-card" style="{{item.cardStyle}}">
+              <text class="wheel-label-name">{{item.name}}</text>
+            </view>
+          </view>
+        </view>
+        <view class="wheel-center">
+          <view class="wheel-center-pointer"></view>
+          <view class="wheel-center-ring"></view>
+          <button class="wheel-button" bindtap="onWheelDrawTap" disabled="{{wheelSpinning}}">
+            {{wheelSpinning ? '抽奖中' : '抽奖'}}
+          </button>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <block wx:elif="{{mode === 'scratch'}}">
+    <view class="section-card scratch-card">
+      <view class="section-head">
+        <view>
+          <text class="section-title">刮刮乐</text>
+          <text class="section-subtitle">轻轻刮开表面，完成后直接揭晓奖励。</text>
+        </view>
+      </view>
+
+      <view class="scratch-stage">
+        <view class="scratch-reward">
+          <text class="scratch-reward-kicker">刮开后将显示</text>
+          <text class="scratch-reward-title">{{scratchPrize || '刮开试试'}}</text>
+          <text class="scratch-reward-subtitle">{{scratchPrize ? scratchMessage : '滑动手指揭晓奖励'}}</text>
+        </view>
+
+        <view wx:if="{{scratchFlashVisible}}" class="scratch-flash"></view>
+
+        <canvas
+          canvas-id="scratchCanvas"
+          class="scratch-canvas"
+          style="width: {{scratchCanvasWidth}}px; height: {{scratchCanvasHeight}}px;"
+          bindtouchstart="onScratchTouchStart"
+          bindtouchmove="onScratchTouchMove"
+          bindtouchend="onScratchTouchEnd"
+        ></canvas>
+      </view>
+    </view>
+  </block>
+
+  <view wx:if="{{resultModalVisible}}" class="modal-mask" bindtap="closeResultModal">
+    <view class="result-modal" catchtap="noop">
+      <view class="result-modal-top">
+        <text class="result-modal-badge">{{resultModalBadge}}</text>
+        <text class="result-modal-title">{{resultModalTitle}}</text>
+        <text class="result-modal-prize">{{resultModalPrize}}</text>
+      </view>
+      <view class="result-modal-body">
+        <text class="result-modal-message">{{resultModalMessage}}</text>
+        <text class="result-modal-delta">{{resultModalDeltaText}}</text>
+        <text class="result-modal-highlight">{{resultModalHighlight}}</text>
+      </view>
+      <button class="result-modal-btn" bindtap="closeResultModal">知道了</button>
+    </view>
+  </view>
+</view>

@@ -1,7 +1,7 @@
 <view class="page-container">
   <view class="tabs-container">
-    <view 
-      wx:for="{{tabs}}" 
+    <view
+      wx:for="{{tabs}}"
       wx:key="key"
       class="tab-item {{activeTab === item.key ? 'active' : ''}}"
       bindtap="switchTab"
@@ -13,9 +13,24 @@
   </view>
 
   <scroll-view class="content-scroll" scroll-y>
+    <view wx:if="{{activeTab === 'comprehensive'}}" class="comprehensive-toolbar">
+      <view class="ai-disclosure">
+        <text class="ai-disclosure-label">AI生成</text>
+        <text class="ai-disclosure-text">本页综合报告由人工智能生成，仅供健康信息整理参考，不能替代医生诊疗。</text>
+      </view>
+      <button
+        class="comprehensive-generate-btn"
+        bindtap="handleGenerateComprehensiveReportClean"
+        loading="{{comprehensiveGenerating}}"
+        disabled="{{comprehensiveGenerating}}"
+      >
+        生成综合报告
+      </button>
+    </view>
+
     <view wx:if="{{loading}}" class="loading-container">
       <view class="loading-spinner"></view>
-      <text class="loading-text">加载中...</text>
+      <text class="loading-text">正在加载...</text>
     </view>
 
     <view wx:elif="{{error}}" class="error-container">
@@ -25,14 +40,14 @@
 
     <view wx:elif="{{currentList.length === 0}}" class="empty-container">
       <view class="empty-icon">
-        <text class="empty-icon-text">📊</text>
+        <text class="empty-icon-text">📭</text>
       </view>
       <text class="empty-text">{{emptyText}}</text>
     </view>
 
     <view wx:else class="list-container">
-      <view 
-        wx:for="{{currentList}}" 
+      <view
+        wx:for="{{currentList}}"
         wx:key="id"
         class="list-card scale-card {{activeTab === 'report' && item.uiState === 'deleting' ? 'list-card--deleting' : ''}}"
         bindtap="handleView"
@@ -63,6 +78,10 @@
           <text class="card-time">{{item.createdAt}}</text>
           <text wx:if="{{activeTab === 'tongue'}}" class="card-summary">{{item.summary || '暂无分析摘要'}}</text>
           <text wx:if="{{activeTab === 'tongue' && item.status}}" class="card-status">{{item.status}}</text>
+          <text wx:if="{{activeTab === 'comprehensive' && item.doctorName}}" class="card-summary">医生：{{item.doctorName}}</text>
+          <view wx:if="{{activeTab === 'comprehensive'}}" class="card-meta-row card-meta-row--comprehensive">
+            <text class="card-type">疾病类型：{{item.type || '未填写'}}</text>
+          </view>
           <view wx:if="{{activeTab === 'report'}}" class="card-meta-row">
             <text class="card-type">{{item.type}} · {{item.status}}</text>
             <text wx:if="{{item.fileCount > 0}}" class="card-file-count">{{item.fileCount}} 张图片</text>
@@ -70,7 +89,7 @@
         </view>
 
         <view wx:if="{{activeTab !== 'questionnaire'}}" class="card-right">
-          <text wx:if="{{activeTab === 'report' && item.uiState === 'deleting'}}" class="view-btn view-btn--danger">删除中</text>
+          <text wx:if="{{activeTab === 'report' && item.uiState === 'deleting'}}" class="view-btn view-btn--danger">删除中...</text>
           <text wx:else class="view-btn">查看</text>
         </view>
       </view>

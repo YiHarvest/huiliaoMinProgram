@@ -21,6 +21,11 @@
         </view>
       </view>
 
+      <view class="ai-disclosure">
+        <text class="ai-disclosure-label">AI生成</text>
+        <text class="ai-disclosure-text">本页面内容由人工智能生成，仅供健康咨询参考，不能替代医生诊疗。</text>
+      </view>
+
       <view class="module">
         <view class="module-head">
           <text class="module-title">常用问题</text>

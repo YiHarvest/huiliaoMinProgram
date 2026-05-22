@@ -1,0 +1,187 @@
+page {
+  height: 100%;
+  background: #eefaf7;
+}
+
+.page {
+  min-height: 100vh;
+  padding: 24rpx;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #eaf9f4 0%, #f5fbf8 30%, #f5f7f6 100%);
+}
+
+.hero-card,
+.section-card {
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 30rpx;
+  box-shadow: 0 12rpx 28rpx rgba(15, 23, 42, 0.06);
+}
+
+.hero-card {
+  padding: 32rpx;
+  margin-bottom: 22rpx;
+}
+
+.hero-head,
+.history-head,
+.history-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.hero-kicker {
+  display: block;
+  font-size: 22rpx;
+  letter-spacing: 2rpx;
+  color: #008671;
+  font-weight: 700;
+  margin-bottom: 10rpx;
+}
+
+.hero-title {
+  display: block;
+  font-size: 38rpx;
+  font-weight: 800;
+  color: #1e332f;
+}
+
+.back-btn {
+  min-width: 112rpx;
+  height: 58rpx;
+  padding: 0;
+  border-radius: 999rpx;
+  background: #eefaf7;
+  color: #008671;
+  font-size: 24rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  border: none;
+}
+
+.back-btn::after {
+  border: none;
+}
+
+.summary-grid {
+  margin-top: 24rpx;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14rpx;
+}
+
+.summary-item {
+  padding: 18rpx 16rpx;
+  border-radius: 22rpx;
+  background: #f7fbfa;
+}
+
+.summary-label {
+  display: block;
+  font-size: 22rpx;
+  color: #7a8c88;
+}
+
+.summary-value {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 34rpx;
+  color: #1e332f;
+  font-weight: 800;
+}
+
+.section-card {
+  padding: 28rpx;
+}
+
+.section-title {
+  display: block;
+  font-size: 32rpx;
+  font-weight: 800;
+  color: #1e332f;
+}
+
+.history-list {
+  margin-top: 20rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.history-item {
+  padding: 22rpx;
+  border-radius: 24rpx;
+  background: #f8fbfa;
+}
+
+.history-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #1e332f;
+}
+
+.history-delta {
+  font-size: 28rpx;
+  font-weight: 800;
+}
+
+.history-delta--get {
+  color: #0f8c79;
+}
+
+.history-delta--spend {
+  color: #ea4335;
+}
+
+.history-meta {
+  margin-top: 12rpx;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.history-badge {
+  display: inline-flex;
+  padding: 6rpx 12rpx;
+  border-radius: 999rpx;
+  background: rgba(0, 168, 143, 0.12);
+  color: #008671;
+  font-size: 20rpx;
+}
+
+.history-time {
+  font-size: 22rpx;
+  color: #7a8c88;
+}
+
+.history-note {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  color: #60736f;
+  line-height: 1.6;
+}
+
+.empty-state {
+  padding: 80rpx 0 40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.empty-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #1e332f;
+}
+
+.empty-text {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  color: #7a8c88;
+  text-align: center;
+  line-height: 1.6;
+}

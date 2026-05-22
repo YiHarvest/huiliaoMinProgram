@@ -109,7 +109,7 @@
           <text class="scale-hint-text">当前医生暂无可用疾病类型</text>
         </view>
 
-        <view class="scale-hint" wx:elif="{{!selectedDisease || !selectedVisitType}}">
+        <view class="scale-hint" wx:elif="{{!selectedVisitType || (!isFirstVisit && !selectedDisease)}}">
           <text class="scale-hint-text">请先选择疾病类型和本次就诊类型</text>
         </view>
 

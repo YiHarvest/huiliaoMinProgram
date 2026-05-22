@@ -26,6 +26,11 @@
       </view>
     </view>
 
+    <view class="ai-disclosure">
+      <text class="ai-disclosure-label">AI生成</text>
+      <text class="ai-disclosure-text">本工作台中的问答和分析内容由人工智能生成，仅供参考，不能替代医生诊疗。</text>
+    </view>
+
     <view class="service-target-card" bindtap="onServiceTargetTap">
       <view class="service-target-main">
         <text class="service-target-label">当前服务对象</text>

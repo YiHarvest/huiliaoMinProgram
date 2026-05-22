@@ -1,20 +1,99 @@
 <view class="page">
-  <view class="page-body">
-    <view class="empty-state" wx:if="{{!hasReportData}}">
-      <view class="empty-icon" aria-role="img" aria-label="综合报告空状态">
-        <view class="empty-icon-board">
-          <view class="empty-icon-clip"></view>
-          <view class="empty-icon-paper">
-            <view class="empty-icon-line"></view>
-            <view class="empty-icon-line"></view>
-            <view class="empty-icon-line"></view>
-            <view class="empty-icon-line empty-icon-line-short"></view>
+  <scroll-view class="page-scroll" scroll-y>
+    <view wx:if="{{loading}}" class="state-wrap">
+      <view class="loading-spinner"></view>
+      <text class="state-text">正在加载综合报告...</text>
+    </view>
+
+    <view wx:elif="{{error}}" class="state-wrap state-wrap--error">
+      <text class="state-title">无法加载综合报告</text>
+      <text class="state-text">{{errorMessage}}</text>
+      <button class="retry-btn" bindtap="retryLoad">重新加载</button>
+    </view>
+
+    <view wx:elif="{{!reportId}}" class="state-wrap">
+      <text class="state-title">缺少报告参数</text>
+      <text class="state-text">请从综合报告列表进入详情页。</text>
+    </view>
+
+    <view wx:else class="content">
+      <view class="ai-disclosure">
+        <text class="ai-disclosure-label">AI生成</text>
+        <text class="ai-disclosure-text">本页综合报告由人工智能生成，仅供健康信息整理参考，不能替代医生诊疗。</text>
+      </view>
+
+      <view class="hero-card">
+        <view class="hero-accent"></view>
+
+        <view class="hero-header">
+          <view class="hero-heading">
+            <text class="hero-badge">报告依据</text>
+            <text class="hero-title">{{report.title || '综合健康报告'}}</text>
+          </view>
+          <text class="hero-time" wx:if="{{report.createdAt}}">{{report.createdAt}}</text>
+        </view>
+
+        <text class="hero-summary">
+          {{basis.description || '本报告基于当前医生、疾病类型和初诊/复诊对应量表组以及最新一次舌苔记录生成。'}}
+        </text>
+
+        <view class="hero-meta-grid">
+          <view class="meta-card">
+            <text class="meta-label">医生</text>
+            <text class="meta-value">{{basis.doctorName || report.doctorName || '未填写'}}</text>
+          </view>
+          <view class="meta-card">
+            <text class="meta-label">疾病类型</text>
+            <text class="meta-value">{{basis.diseaseTypeName || report.diseaseTypeName || '未填写'}}</text>
+          </view>
+          <view class="meta-card">
+            <text class="meta-label">就诊类型</text>
+            <text class="meta-value">{{basis.visitTypeName || '未填写'}}</text>
+          </view>
+          <view class="meta-card">
+            <text class="meta-label">量表填写时间</text>
+            <text class="meta-value">{{basis.questionnaireCompletedAt || '未填写'}}</text>
+          </view>
+        </view>
+
+        <view class="basis-section">
+          <text class="basis-subtitle">包含量表</text>
+          <view class="pill-list" wx:if="{{basis.questionnaireNames.length}}">
+            <text wx:for="{{basis.questionnaireNames}}" wx:key="*this" class="pill-item">{{index + 1}}. {{item}}</text>
+          </view>
+          <text wx:else class="basis-empty">暂无量表名称</text>
+        </view>
+
+        <view class="basis-section basis-section--tongue">
+          <text class="basis-subtitle">舌苔信息</text>
+          <view class="basis-row">
+            <text class="basis-label">舌苔来源</text>
+            <text class="basis-value">{{basis.tongueSource || '最新一次舌苔记录'}}</text>
+          </view>
+          <view class="basis-row">
+            <text class="basis-label">舌苔时间</text>
+            <text class="basis-value">{{basis.tongueCreatedAt || '未填写'}}</text>
           </view>
         </view>
       </view>
-      <text class="empty-text">暂无综合报告数据</text>
-    </view>
 
-    <view class="report-content" wx:else></view>
-  </view>
+      <view class="section-card">
+        <view class="section-title-row">
+          <text class="section-title">综合报告内容</text>
+        </view>
+
+        <view wx:if="{{reportBlocks.length}}" class="report-body">
+          <block wx:for="{{reportBlocks}}" wx:key="index">
+            <view wx:if="{{item.isBlank}}" class="report-spacer"></view>
+            <text wx:elif="{{item.isHeading}}" class="report-line report-line--heading">{{item.text}}</text>
+            <text wx:else class="report-line">{{item.text}}</text>
+          </block>
+        </view>
+
+        <view wx:else class="empty-report">
+          <text class="empty-report-text">暂无报告正文</text>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
 </view>

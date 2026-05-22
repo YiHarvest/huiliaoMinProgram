@@ -12,55 +12,84 @@ page {
   z-index: 100;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding-left: 20rpx;
-  padding-right: 20rpx;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 252, 251, 0.96) 100%);
-  border-bottom: 1rpx solid rgba(214, 238, 232, 0.6);
-  backdrop-filter: blur(10rpx);
+  justify-content: center;
+  padding-left: 16rpx;
+  padding-right: 16rpx;
+  background: rgba(255, 255, 255, 0.98);
+  border-bottom: 1rpx solid rgba(214, 238, 232, 0.48);
+  backdrop-filter: blur(12rpx);
 }
 
 .nav-bar-left {
-  flex: 0 0 80rpx;
+  flex: 0 0 150rpx;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
 }
 
-.nav-bar-title {
+.nav-bar-center {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  font-size: 34rpx;
-  font-weight: 700;
-  color: #243633;
+  gap: 6rpx;
 }
 
 .nav-bar-right {
-  flex: 0 0 80rpx;
+  flex: 0 0 88rpx;
 }
 
-.nav-btn {
+.nav-menu-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 64rpx;
-  height: 64rpx;
-  border-radius: 16rpx;
-  background: rgba(245, 255, 252, 0.8);
-}
-
-.nav-btn-menu:active {
-  background: rgba(230, 245, 242, 0.9);
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  gap: 8rpx;
 }
 
 .menu-icon {
   display: flex;
   flex-direction: column;
-  gap: 6rpx;
+  gap: 5rpx;
+  flex-shrink: 0;
 }
 
 .menu-bar {
-  width: 32rpx;
-  height: 4rpx;
+  width: 24rpx;
+  height: 3rpx;
   background: #243633;
   border-radius: 2rpx;
+}
+
+.nav-menu-text {
+  font-size: 16rpx;
+  line-height: 1;
+  color: #0f6f61;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.nav-bar-title {
+  font-size: 33rpx;
+  line-height: 1.15;
+  font-weight: 700;
+  color: #243633;
+}
+
+.nav-bar-subtitle {
+  font-size: 17rpx;
+  line-height: 1.25;
+  color: #97a8a3;
+  white-space: nowrap;
 }
 
 /* 历史对话抽屉 */
@@ -395,22 +424,25 @@ page {
 .question-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14rpx;
+  gap: 12rpx;
 }
 
 .question-card {
-  min-height: 104rpx;
-  padding: 18rpx 18rpx 16rpx;
-  border-radius: 24rpx;
+  min-height: 82rpx;
+  padding: 14rpx 14rpx 12rpx;
+  border-radius: 20rpx;
   background: rgba(244, 251, 248, 0.96);
   border: 1rpx solid rgba(214, 238, 232, 0.92);
-  box-shadow: 0 8rpx 18rpx rgba(15, 94, 81, 0.04);
+  box-shadow: 0 6rpx 14rpx rgba(15, 94, 81, 0.035);
 }
 
 .question-card-text {
-  font-size: 22rpx;
-  line-height: 32rpx;
+  font-size: 20rpx;
+  line-height: 28rpx;
   color: #406d64;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .message-section,
@@ -498,6 +530,10 @@ page {
   box-shadow: 0 6rpx 14rpx rgba(15, 94, 81, 0.04);
 }
 
+.message-avatar-user {
+  order: 3;
+}
+
 .message-body {
   max-width: 80%;
 }
@@ -506,6 +542,11 @@ page {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  order: 2;
+}
+
+.message-row-user .message-label {
+  text-align: right;
 }
 
 .message-label {
@@ -731,6 +772,9 @@ page {
   left: 0;
   right: 0;
   z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   padding: 12rpx 0 16rpx;
   background: transparent;
   box-shadow: none;
@@ -741,11 +785,23 @@ page {
   display: flex;
   align-items: center;
   height: 96rpx;
-  margin: 0 24rpx;
+  width: calc(100% - 48rpx);
+  margin: 0;
   padding: 0 24rpx;
   border-radius: 48rpx;
   background: #ffffff;
   box-shadow: 0 6rpx 24rpx rgba(0, 0, 0, 0.1);
+}
+
+.input-disclaimer {
+  display: block;
+  margin-top: 8rpx;
+  margin-bottom: 2rpx;
+  color: #b7b7b7;
+  font-size: 22rpx;
+  line-height: 1.4;
+  text-align: center;
+  letter-spacing: 1rpx;
 }
 
 .input-btn {

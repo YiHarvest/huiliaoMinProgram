@@ -1,3 +1,5 @@
+import { completePointsTask } from '../../utils/points-store'
+
 type QuestionnaireOption = {
   value: string
   label: string
@@ -104,7 +106,8 @@ Page({
     loading: true,
     submitted: false,
     questionnaireStatus: '',
-    isRefilling: false
+    isRefilling: false,
+    submitting: false
   },
   onLoad(options: {
     recordId?: string
@@ -313,6 +316,10 @@ Page({
     })
   },
   async submitQuestionnaire() {
+    if (this.data.submitting) {
+      return
+    }
+
     const { recordId, answers, questions, totalQuestions, doctorId, patientId, questionnaireId, diseaseType, visitType } = this.data
 
     const incompleteQuestion = questions.find((question: QuestionnaireQuestion) => !hasAnswer(answers[question.subjectId]))
@@ -345,8 +352,15 @@ Page({
 
     console.log('[questionnaire-submit] payload =', payload)
 
+    const startTime = Date.now()
+    console.log('[scale-submit-time] step=click_start cost=', Date.now() - startTime)
+
+    this.setData({ submitting: true })
     wx.showLoading({ title: '保存中...' })
+
+    console.log('[scale-submit-time] step=build_payload_done cost=', Date.now() - startTime)
     try {
+      const requestStartTime = Date.now()
       const response = await new Promise<WechatMiniprogram.RequestSuccessCallbackResult>((resolve, reject) => {
         wx.request({
           url: 'https://miniprogram.huiliaoyiyuan.com/api/questionnaires/submit',
@@ -355,14 +369,21 @@ Page({
             'Content-Type': 'application/json'
           },
           data: payload,
+          timeout: 60000,
           success: resolve,
           fail: reject
         })
       })
 
+      console.log('[scale-submit-time] step=request_start cost=', Date.now() - startTime)
+      console.log('[scale-submit-time] request_duration_ms=', Date.now() - requestStartTime)
+
       if (response.statusCode === 200 && response.data) {
+        console.log('[scale-submit-time] step=request_success cost=', Date.now() - startTime)
         const responseData = response.data as any
         if (responseData.success) {
+          const analysisStatus = String(responseData.analysisStatus || '').trim()
+          const isGenerating = analysisStatus === 'generating'
           this.setData({
             submitted: true,
             questionnaireStatus: 'completed',
@@ -371,21 +392,30 @@ Page({
             progressPercent: totalQuestions > 0 ? 100 : 0
           })
 
+          console.log('[scale-submit-time] step=ui_update_done cost=', Date.now() - startTime)
           wx.showToast({
-            title: '保存成功',
-            icon: 'success',
+            title: isGenerating ? '保存成功，分析生成中' : '保存成功',
+            icon: isGenerating ? 'none' : 'success',
             duration: 1500
           })
+          completePointsTask('questionnaire_fill')
+          if (isGenerating) {
+            console.log('[scale-submit-time] analysis_status = generating, message = 保存成功，AI分析生成中，请稍后在量表记录中查看')
+          }
         } else {
+          console.log('[scale-submit-time] step=response_failed cost=', Date.now() - startTime, 'error=', responseData.error || responseData.message)
           wx.showToast({ title: '保存失败', icon: 'none' })
         }
       } else {
+        console.log('[scale-submit-time] step=http_error cost=', Date.now() - startTime, 'status=', response.statusCode)
         wx.showToast({ title: '保存失败', icon: 'none' })
       }
     } catch (error) {
+      console.log('[scale-submit-time] step=request_fail cost=', Date.now() - startTime, 'error=', error)
       wx.showToast({ title: '网络错误', icon: 'none' })
     } finally {
       wx.hideLoading()
+      this.setData({ submitting: false })
     }
   }
 })
