@@ -78,84 +78,36 @@ huiliao/
 ## 页面展示
 
 ### 首页 - 核心功能入口
-<div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
-  <div style="text-align: center; width: 350px;">
-    <img src="小程序页面展示图片/首页.jpg" alt="首页" width="350">
-    <p>首页</p>
-  </div>
-</div>
+<p align="center">
+  <img src="小程序页面展示图片/首页.jpg" alt="首页" width="350">
+</p>
 
 #### 四大核心功能
-<div style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: center;">
-  <div style="text-align: center; width: 250px;">
-    <img src="小程序页面展示图片/首页-填写量表.jpg" alt="填写量表" width="240">
-    <p>📋 填写量表</p>
-  </div>
-  <div style="text-align: center; width: 250px;">
-    <img src="小程序页面展示图片/首页-舌苔上传.jpg" alt="舌苔上传" width="240">
-    <p>👅 舌苔上传</p>
-  </div>
-  <div style="text-align: center; width: 250px;">
-    <img src="小程序页面展示图片/首页-上传报告.jpg" alt="上传报告" width="240">
-    <p>📁 上传报告</p>
-  </div>
-  <div style="text-align: center; width: 250px;">
-    <img src="小程序页面展示图片/首页-积分商城.jpg" alt="积分商城" width="240">
-    <p>🎁 积分商城</p>
-  </div>
-</div>
+| 📋 填写量表 | 👅 舌苔上传 |
+|:---:|:---:|
+| <img src="小程序页面展示图片/首页-填写量表.jpg" alt="填写量表" width="240"> | <img src="小程序页面展示图片/首页-舌苔上传.jpg" alt="舌苔上传" width="240"> |
+
+| � 上传报告 | 🎁 积分商城 |
+|:---:|:---:|
+| <img src="小程序页面展示图片/首页-上传报告.jpg" alt="上传报告" width="240"> | <img src="小程序页面展示图片/首页-积分商城.jpg" alt="积分商城" width="240"> |
 
 ### AI 智能助手
-<div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
-  <div style="text-align: center; width: 320px;">
-    <img src="小程序页面展示图片/智能助手.jpg" alt="AI智能助手" width="310">
-    <p>💬 AI对话界面</p>
-  </div>
-  <div style="text-align: center; width: 320px;">
-    <img src="小程序页面展示图片/智能助手-历史对话.jpg" alt="历史对话" width="310">
-    <p>📜 历史对话记录</p>
-  </div>
-</div>
+| 💬 AI对话界面 | 📜 历史对话记录 |
+|:---:|:---:|
+| <img src="小程序页面展示图片/智能助手.jpg" alt="AI智能助手" width="310"> | <img src="小程序页面展示图片/智能助手-历史对话.jpg" alt="历史对话" width="310"> |
 
 ### 个人中心
-<div style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: center;">
-  <div style="text-align: center; width: 200px;">
-    <img src="小程序页面展示图片/我的.jpg" alt="我的" width="190">
-    <p>👤 个人中心主页</p>
-  </div>
-  <div style="text-align: center; width: 200px;">
-    <img src="小程序页面展示图片/我的-量表记录.jpg" alt="量表记录" width="190">
-    <p>📊 量表记录</p>
-  </div>
-  <div style="text-align: center; width: 200px;">
-    <img src="小程序页面展示图片/我的-舌苔记录.jpg" alt="舌苔记录" width="190">
-    <p>👅 舌苔记录</p>
-  </div>
-  <div style="text-align: center; width: 200px;">
-    <img src="小程序页面展示图片/我的-检查报告.jpg" alt="检查报告" width="190">
-    <p>📁 检查报告</p>
-  </div>
-  <div style="text-align: center; width: 200px;">
-    <img src="小程序页面展示图片/我的-综合报告.jpg" alt="综合报告" width="190">
-    <p>📋 综合报告</p>
-  </div>
-  <div style="text-align: center; width: 200px;">
-    <img src="小程序页面展示图片/我的-完善资料.jpg" alt="完善资料" width="190">
-    <p>✏️ 完善资料</p>
-  </div>
-  <div style="text-align: center; width: 200px;">
-    <img src="小程序页面展示图片/我的-消息订阅.jpg" alt="消息订阅" width="190">
-    <p>🔔 消息订阅</p>
-  </div>
-  <div style="text-align: center; width: 200px;">
-    <img src="小程序页面展示图片/我的-常见问题.jpg" alt="常见问题" width="190">
-    <p>❓ 常见问题</p>
-  </div>
-  <div style="text-align: center; width: 200px;">
-    <img src="小程序页面展示图片/我的-联系我们.jpg" alt="联系我们" width="190">
-    <p>📞 联系我们</p>
-  </div>
-</div>
+| 👤 个人中心主页 | 📊 量表记录 | 👅 舌苔记录 |
+|:---:|:---:|:---:|
+| <img src="小程序页面展示图片/我的.jpg" alt="我的" width="190"> | <img src="小程序页面展示图片/我的-量表记录.jpg" alt="量表记录" width="190"> | <img src="小程序页面展示图片/我的-舌苔记录.jpg" alt="舌苔记录" width="190"> |
+
+| 📁 检查报告 | � 综合报告 | ✏️ 完善资料 |
+|:---:|:---:|:---:|
+| <img src="小程序页面展示图片/我的-检查报告.jpg" alt="检查报告" width="190"> | <img src="小程序页面展示图片/我的-综合报告.jpg" alt="综合报告" width="190"> | <img src="小程序页面展示图片/我的-完善资料.jpg" alt="完善资料" width="190"> |
+
+| 🔔 消息订阅 | ❓ 常见问题 | 📞 联系我们 |
+|:---:|:---:|:---:|
+| <img src="小程序页面展示图片/我的-消息订阅.jpg" alt="消息订阅" width="190"> | <img src="小程序页面展示图片/我的-常见问题.jpg" alt="常见问题" width="190"> | <img src="小程序页面展示图片/我的-联系我们.jpg" alt="联系我们" width="190"> |
 
 ## 后端服务架构
 
